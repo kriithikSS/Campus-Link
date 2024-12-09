@@ -15,7 +15,7 @@ export default function TabsLayout() {
         tabBarIcon:({color})=><Feather name="home" size={24} color={color}/>
        }} />
       
-      <Tabs.Screen name="favourite" options={{ title: 'favourite',headerShown:false,
+      <Tabs.Screen name="favorite" options={{ title: 'favourite',headerShown:false,
         tabBarIcon:({color})=><MaterialIcons name="favorite" size={24} color={color} />
       }} />
       

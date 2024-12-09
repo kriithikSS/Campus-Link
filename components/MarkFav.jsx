@@ -1,4 +1,4 @@
-import { View, Pressable } from 'react-native';
+import { View, Pressable, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import Shared from './../Shared/Shared';
@@ -7,7 +7,7 @@ import { useUser } from '@clerk/clerk-expo';
 export default function MarkFav({ SRM }) {
   const { user } = useUser();
   const [favList, setFavList] = useState([]);
-  const [loading, setLoading] = useState(true); // New loading state
+  const [loading, setLoading] = useState(true); 
 
   useEffect(() => {
     if (user) {
@@ -16,16 +16,16 @@ export default function MarkFav({ SRM }) {
   }, [user]);
 
   const GetFav = async () => {
-    setLoading(true); // Set loading to true
+    setLoading(true);
     try {
       const result = await Shared.GetFavList(user);
-      console.log(result);
+      console.log("Fetched favorites:", result);
       setFavList(result.favorites ? result.favorites : []);
     } catch (error) {
       console.error("Error fetching favorites:", error);
-      setFavList([]); // Default to empty array if error occurs
+      setFavList([]);
     } finally {
-      setLoading(false); // Set loading to false when done
+      setLoading(false);
     }
   };
 
@@ -33,7 +33,8 @@ export default function MarkFav({ SRM }) {
     try {
       const favResult = [...favList, SRM?.id];
       await Shared.UpdateFav(user, favResult);
-      setFavList(favResult); // Update state immediately
+      console.log("Added to favorites:", favResult);
+      setFavList(favResult);
     } catch (error) {
       console.error("Error adding to favorites:", error);
     }
@@ -43,7 +44,8 @@ export default function MarkFav({ SRM }) {
     try {
       const favResult = favList.filter(item => item !== SRM?.id);
       await Shared.UpdateFav(user, favResult);
-      setFavList(favResult); // Update state immediately
+      console.log("Removed from favorites:", favResult);
+      setFavList(favResult);
     } catch (error) {
       console.error("Error removing from favorites:", error);
     }
@@ -51,7 +53,9 @@ export default function MarkFav({ SRM }) {
 
   return (
     <View>
-      {loading ? null : ( // Optionally show a loader or nothing while loading
+      {loading ? (
+        <ActivityIndicator size="large" color="blue" />
+      ) : (
         favList?.includes(SRM?.id) ? (
           <Pressable onPress={removeFromFav}>
             <Ionicons name="heart" size={30} color="red" />
