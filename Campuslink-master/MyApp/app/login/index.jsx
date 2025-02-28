@@ -1,24 +1,31 @@
 import { View, Text, Image, Pressable } from "react-native";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import Colors from "../../constants/Colors";
-import * as WebBrowser from 'expo-web-browser';
-import { useOAuth } from '@clerk/clerk-expo';
-import * as Linking from 'expo-linking';
+import * as WebBrowser from "expo-web-browser";
+import { useOAuth } from "@clerk/clerk-expo";
+import * as Linking from "expo-linking";
+import { Platform } from "react-native"; // Import Platform for OS check
 
+// ✅ Warm Up Browser only on Native Platforms (Fixes Web Error)
 export const useWarmUpBrowser = () => {
-  React.useEffect(() => {
-    void WebBrowser.warmUpAsync();
-    return () => {
-      void WebBrowser.coolDownAsync();
-    };
+  useEffect(() => {
+    if (Platform.OS !== "web") {
+      WebBrowser.warmUpAsync();
+      return () => {
+        WebBrowser.coolDownAsync();
+      };
+    }
   }, []);
 };
 
-WebBrowser.maybeCompleteAuthSession();
+// ✅ Ensure `maybeCompleteAuthSession()` runs only once (Fix for Clerk)
+if (Platform.OS !== "web") {
+  WebBrowser.maybeCompleteAuthSession();
+}
 
 export default function LoginScreen() {
   useWarmUpBrowser();
-  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' });
+  const { startOAuthFlow } = useOAuth({ strategy: "oauth_google" });
 
   const [loading, setLoading] = useState(false);
 
@@ -28,61 +35,34 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       const { createdSessionId, signIn, signUp, setActive } = await startOAuthFlow({
-        redirectUrl: Linking.createURL('/(tabs)/home', { scheme: 'myapp' }),
+        redirectUrl: Platform.OS === "web" 
+          ? window.location.origin 
+          : Linking.createURL("/(tabs)/home", { scheme: "myapp" }),
       });
 
       if (createdSessionId) {
-        // Session creation was successful, set the session as active
         await setActive({ session: createdSessionId });
       } else {
-        // Handle signIn or signUp for next steps such as MFA
+        console.log("OAuth Sign-In/Sign-Up flow incomplete.");
       }
     } catch (err) {
-      console.error('OAuth error', err);
+      console.error("OAuth Error:", err);
     } finally {
       setLoading(false);
     }
   }, [loading, startOAuthFlow]);
 
   return (
-    <View
-      style={{
-        backgroundColor: Colors.WHITE,
-        height: "100%",
-      }}
-    >
+    <View style={{ backgroundColor: Colors.WHITE, height: "100%", alignItems: "center" }}>
       <Image 
         source={require("./../../assets/images/CampusLink1.png")}
-        style={{
-          width: "auto",
-          height: 200,
-          marginTop: 200,
-        }}
+        style={{ width: "auto", height: 200, marginTop: 200 }}
       />
-      <View
-        style={{
-          padding: 20,
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <Text
-          style={{
-            fontFamily: "Roboto-bold",
-            fontSize: 25,
-            textAlign: "center",
-          }}
-        >
+      <View style={{ padding: 20, alignItems: "center" }}>
+        <Text style={{ fontFamily: "Roboto-bold", fontSize: 25, textAlign: "center" }}>
           SRM Connect: Where Ideas Take Flight.
         </Text>
-        <Text
-          style={{
-            fontFamily: "Roboto-reg",
-            fontSize: 16,
-            textAlign: "center",
-            color: Colors.GRAY,
-          }}
-        >
+        <Text style={{ fontFamily: "Roboto-reg", fontSize: 16, textAlign: "center", color: Colors.GRAY, marginTop: 10 }}>
           A one-stop platform to connect, collaborate, and engage in campus events, workshops, and clubs.
         </Text>
 
@@ -95,17 +75,11 @@ export default function LoginScreen() {
             backgroundColor: loading ? Colors.GRAY : Colors.PRIMARY,
             width: "100%",
             borderRadius: 14,
+            alignItems: "center",
           }}
         >
-          <Text
-            style={{
-              fontFamily: "Roboto-med",
-              fontSize: 18,
-              textAlign: "center",
-              color: Colors.WHITE,
-            }}
-          >
-            {loading ? 'Signing In...' : 'Get started'}
+          <Text style={{ fontFamily: "Roboto-med", fontSize: 18, color: Colors.WHITE }}>
+            {loading ? "Signing In..." : "Get started"}
           </Text>
         </Pressable>
       </View>

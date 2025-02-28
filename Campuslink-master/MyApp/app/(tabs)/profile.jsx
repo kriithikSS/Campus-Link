@@ -44,7 +44,7 @@ export default function Profile() {
   const router=useRouter();
   const {signOut}=useAuth();
   const onPressMenu=(menu)=>{
-    if(menu=='logout'){
+    if(menu.path ==='logout'){
       signOut();
       return;
     }
