@@ -9,6 +9,7 @@ import Colors from '../../constants/Colors';
 
 export default function SRMdetails() {
   const SRM=useLocalSearchParams();
+  console.log("🚀 Received SRM Data in Details Page:", SRM);
   const navigation=useNavigation();
 
   useEffect(()=>{

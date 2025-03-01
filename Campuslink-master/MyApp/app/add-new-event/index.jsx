@@ -91,8 +91,10 @@ export default function AddNew() {
             if (!imageUrl) return;
 
             const updatedFormData = { ...formData, imageUrl };
-            await addDoc(collection(db, 'YourCollectionName'), updatedFormData);
+            console.log("Saving to Firestore:", updatedFormData);
+            await addDoc(collection(db, 'Works'), updatedFormData);
             showToast('Form submitted successfully!');
+            navigation,goBack();
         } catch (error) {
             console.error('Failed to submit form:', error);
             showToast('Failed to submit form.');
