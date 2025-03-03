@@ -27,15 +27,15 @@ export default function SRMListByCategory() {
     <View>
       <Category category={(value)=>GetSRMList(value)}/>
       <FlatList
-        data={SRMList}
-        style={{marginTop:10}}
-        horizontal={true}
-        refreshing={loader}
-        onRefresh={()=>GetSRMList('Clubs')}
-        renderItem={({item,index})=>(
-          <SRMListItem SRM={item}/>
-        )}
-      />
+  data={SRMList}
+  style={{ marginTop: 10 }}
+  horizontal={true}
+  refreshing={loader}
+  onRefresh={() => GetSRMList('Clubs')}
+  renderItem={({ item }) => <SRMListItem SRM={item} />}
+  keyExtractor={(item, index) => item.id || `${item.name}-${index}`} // Use Firestore ID or a fallback
+/>
+
     </View>
   )
 }

@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
-import { ClerkProvider, ClerkLoaded, useAuth } from '@clerk/clerk-expo';
+import { ClerkProvider, ClerkLoaded, useAuth as useClerkAuth } from '@clerk/clerk-expo';
+import { AuthProvider } from '../context/AuthContext'; // Import our new AuthProvider
 
 const tokenCache = {
   async getToken(key) {
@@ -30,7 +31,7 @@ const tokenCache = {
 };
 
 function AuthWrapper({ children }) {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded, isSignedIn } = useClerkAuth();
 
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
@@ -65,21 +66,15 @@ export default function RootLayout() {
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <ClerkLoaded>
         <AuthWrapper>
-          <Stack>
-            <Stack.Screen name="index" />
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="login/index"
-              options={{
-                headerShown: false,
-              }}
-            />
-          </Stack>
+          <AuthProvider>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="login/index" options={{ headerShown: false }} />
+              <Stack.Screen name="redirect-handler" options={{ headerShown: false }} />
+              <Stack.Screen name="admin" options={{ headerShown: false }} />
+            </Stack>
+          </AuthProvider>
         </AuthWrapper>
       </ClerkLoaded>
     </ClerkProvider>
