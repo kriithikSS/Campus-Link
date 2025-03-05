@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, Image, ActivityIndicator } from 'react-native';
-import { useRoute } from '@react-navigation/native'; // ✅ Correct navigation hook
+import { useRoute } from '@react-navigation/native';
 
 export default function SRMinfo() {
     const route = useRoute();
@@ -9,8 +9,10 @@ export default function SRMinfo() {
     const [validImageUrl, setValidImageUrl] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    console.log("✅ Received Image URL:", imageUrl);
+
     useEffect(() => {
-        fetch(decodedImageUrl, { method: "HEAD" })
+        fetch(decodedImageUrl, { method: "HEAD" }) // ✅ Check if image exists
             .then((res) => {
                 if (res.ok) {
                     setValidImageUrl(decodedImageUrl);
