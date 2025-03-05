@@ -12,17 +12,22 @@ export default function SRMListByCategory() {
   useEffect(()=>{
     GetSRMList('Clubs')
   },[])
-  const GetSRMList=async(category)=>{
-    setLoader(true)
-    setSRMList([]);
-    const q=query(collection(db,'Works'),where('category','==',category));
-    const querySnapshot=await getDocs(q);
-
-    querySnapshot.forEach(doc=>{
-      setSRMList(SRMList=>[...SRMList,doc.data()])
-    })
+  const GetSRMList = async (category) => {
+    setLoader(true);
+    setSRMList([]); // Clear list before fetching
+  
+    const q = query(collection(db, 'Works'), where('category', '==', category));
+    const querySnapshot = await getDocs(q);
+  
+    const fetchedList = querySnapshot.docs.map(doc => ({
+      id: doc.id,  // ✅ Include Firestore document ID
+      ...doc.data()
+    }));
+  
+    setSRMList(fetchedList);
     setLoader(false);
-  }
+  };
+  
   return (
     <View>
       <Category category={(value)=>GetSRMList(value)}/>
@@ -33,9 +38,8 @@ export default function SRMListByCategory() {
   refreshing={loader}
   onRefresh={() => GetSRMList('Clubs')}
   renderItem={({ item }) => <SRMListItem SRM={item} />}
-  keyExtractor={(item, index) => item.id || `${item.name}-${index}`} // Use Firestore ID or a fallback
+  keyExtractor={(item) => item.id} // ✅ Use Firestore ID as the key
 />
-
     </View>
   )
 }

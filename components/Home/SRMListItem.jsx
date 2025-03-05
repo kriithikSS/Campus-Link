@@ -8,10 +8,18 @@ export default function SRMListItem({ SRM }) {
   const router=useRouter();
   return (
     <TouchableOpacity 
-    onPress={()=>router.push({
-      pathname:'/SRM-details',
-      params:SRM
-    })}
+    onPress={() => {
+      console.log("✅ Navigating with:", SRM); // Debugging
+      router.push({
+        pathname: '/SRM-details',
+        params: {
+          name: SRM.name,
+          imageUrl: encodeURIComponent(SRM.imageUrl), // ✅ Fix encoding issue
+        }
+      });
+    }}
+    
+    
     style={{
       padding: 10,
       marginRight: 15,

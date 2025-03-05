@@ -20,9 +20,9 @@ const AdminDashboard = () => {
           style={styles.menuItem} 
           onPress={() => router.push('/admin/manage-events')}
         >
-          <Text style={styles.menuItemText}>Manage Events</Text>
+          <Text style={styles.menuItemText}>Add Post</Text>
           <Text style={styles.menuItemDescription}>
-            Add, edit, or remove campus events
+            Add Post
           </Text>
         </TouchableOpacity>
         
@@ -30,9 +30,9 @@ const AdminDashboard = () => {
           style={styles.menuItem} 
           onPress={() => router.push('/admin/user-management')}
         >
-          <Text style={styles.menuItemText}>User Management</Text>
+          <Text style={styles.menuItemText}>Manage post</Text>
           <Text style={styles.menuItemDescription}>
-            Manage user accounts and permissions
+          Edit, or remove campus Posts created
           </Text>
         </TouchableOpacity>
         

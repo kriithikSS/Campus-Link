@@ -1,149 +1,78 @@
-import { View, Text, Image, TouchableOpacity, StyleSheet, Alert } from "react-native";
-import React from "react";
-import { useUser, useAuth as useClerkAuth } from "@clerk/clerk-expo";
-import { Link, useRouter } from "expo-router";
-import Colors from "../../constants/Colors";
-import { useAuth } from "../../context/AuthContext"; // Fixed import path
+import { View, Text, Image, FlatList, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React from 'react';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { useUser, useAuth as useClerkAuth } from '@clerk/clerk-expo';
+import { useRouter } from 'expo-router';
+import Colors from '../../constants/Colors';
+import { useAuth } from '../../context/AuthContext';
 
 export default function Profile() {
   const { user } = useUser();
   const { signOut } = useClerkAuth();
-  const { isAdmin } = useAuth(); // Get admin status from our context
+  const { isAdmin } = useAuth();
   const router = useRouter();
 
-  const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-      {
-        text: "Sign Out",
-        onPress: () => {
-          signOut();
-          router.replace("/login");
-        },
-      },
-    ]);
-  };
+  const Menu = [
+    { id: 1, name: 'Favorites', icon: 'heart', path: '/(tabs)/favorite' },
+    { id: 3, name: 'My Registered Events', icon: 'calendar', path: '/profile/my-events' },
+    { id: 5, name: 'Search', icon: 'search', path: '/(tabs)/search' },
+    { id: 4, name: 'Help & Support', icon: 'help-circle', path: '/profile/help-support' },
+    { id: 6, name: 'Logout', icon: 'exit', path: 'logout' }
+  ];
 
-  const handleReturnToAdmin = () => {
-    router.replace("/admin");
+  const handleMenuPress = (menu) => {
+    if (menu.path === 'logout') {
+      Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Sign Out", onPress: () => { signOut(); router.replace("/login"); } }
+      ]);
+      return;
+    }
+    router.push(menu.path);
   };
 
   return (
     <View style={styles.container}>
-      {/* User Profile Section */}
+      {/* User Info */}
       <View style={styles.profileContainer}>
-        <Image
-          source={{ uri: user?.imageUrl }}
-          style={styles.profileImage}
-        />
-        <View style={styles.userInfo}>
+        <Image source={{ uri: user?.imageUrl }} style={styles.profileImage} />
+        <View>
           <Text style={styles.userName}>{user?.fullName}</Text>
           <Text style={styles.userEmail}>{user?.primaryEmailAddress?.emailAddress}</Text>
         </View>
       </View>
 
-      {/* Options Section */}
-      <View style={styles.optionsContainer}>
-        <Link href="/profile/edit-profile" asChild>
-          <TouchableOpacity style={styles.option}>
-            <Text style={styles.optionText}>Edit Profile</Text>
-          </TouchableOpacity>
-        </Link>
+      {/* Admin Dashboard */}
+      {isAdmin && (
+        <TouchableOpacity style={styles.adminOption} onPress={() => router.replace('/admin')}>
+          <Text style={styles.adminOptionText}>Return to Admin Dashboard</Text>
+        </TouchableOpacity>
+      )}
 
-        <Link href="/profile/my-events" asChild>
-          <TouchableOpacity style={styles.option}>
-            <Text style={styles.optionText}>My Registered Events</Text>
-          </TouchableOpacity>
-        </Link>
-
-        <Link href="/profile/help-support" asChild>
-          <TouchableOpacity style={styles.option}>
-            <Text style={styles.optionText}>Help & Support</Text>
-          </TouchableOpacity>
-        </Link>
-
-        {/* Admin Return Option - Only show if user is admin */}
-        {isAdmin && (
-          <TouchableOpacity style={styles.adminOption} onPress={handleReturnToAdmin}>
-            <Text style={styles.adminOptionText}>Return to Admin Dashboard</Text>
+      {/* Menu Options */}
+      <FlatList
+        data={Menu}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuPress(item)}>
+            <Ionicons name={item.icon} size={28} color={Colors.PRIMARY} style={styles.icon} />
+            <Text style={styles.menuText}>{item.name}</Text>
           </TouchableOpacity>
         )}
-
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
-      </View>
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.WHITE,
-    padding: 20,
-  },
-  profileContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 30,
-    marginTop: 20,
-  },
-  profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    marginRight: 15,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontFamily: "Roboto-bold",
-    fontSize: 22,
-    marginBottom: 5,
-  },
-  userEmail: {
-    fontFamily: "Roboto-reg",
-    fontSize: 16,
-    color: Colors.GRAY,
-  },
-  optionsContainer: {
-    marginTop: 10,
-  },
-  option: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.LIGHT_GRAY,
-  },
-  optionText: {
-    fontFamily: "Roboto-med",
-    fontSize: 16,
-  },
-  adminOption: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.LIGHT_GRAY,
-    backgroundColor: Colors.LIGHT_PRIMARY,
-  },
-  adminOptionText: {
-    fontFamily: "Roboto-bold",
-    fontSize: 16,
-    color: Colors.PRIMARY,
-  },
-  signOutButton: {
-    marginTop: 30,
-    backgroundColor: Colors.DANGER,
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  signOutText: {
-    fontFamily: "Roboto-bold",
-    fontSize: 16,
-    color: Colors.WHITE,
-  },
+  container: { flex: 1, padding: 20, backgroundColor: Colors.WHITE },
+  profileContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 30, marginTop: 20 },
+  profileImage: { width: 80, height: 80, borderRadius: 40, marginRight: 15 },
+  userName: { fontFamily: 'Roboto-bold', fontSize: 22, marginBottom: 5 },
+  userEmail: { fontFamily: 'Roboto-reg', fontSize: 16, color: Colors.GRAY },
+  adminOption: { paddingVertical: 15, backgroundColor: Colors.LIGHT_PRIMARY, marginBottom: 10, alignItems: 'center', borderRadius: 8 },
+  adminOptionText: { fontFamily: 'Roboto-bold', fontSize: 16, color: Colors.PRIMARY },
+  menuItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 10, backgroundColor: '#f5f5f5', marginVertical: 5 },
+  icon: { padding: 10, backgroundColor: Colors.LIGHT_PRIMARY, borderRadius: 8 },
+  menuText: { fontFamily: 'Roboto-med', fontSize: 18, marginLeft: 10 }
 });

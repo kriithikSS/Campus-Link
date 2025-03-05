@@ -9,7 +9,6 @@ import Colors from '../../constants/Colors';
 import { TouchableOpacity } from 'react-native';
 import { Link } from 'expo-router';
 
-
 export default function HomeScreen() {
     
   return (
@@ -24,14 +23,7 @@ export default function HomeScreen() {
 
       {/*SRMlist + Category*/}
         <SRMListByCategory/>
-
-      {/* Add new Event*/}
-      <Link href={'/add-new-event'}
-        style={styles.addEventContainer}>
-      <TouchableOpacity style={styles.addEventContainer}>
-      <Ionicons name="add-circle-sharp" size={39} color="black" />
-      </TouchableOpacity>
-      </Link>
+        
     </View>
   );
 }

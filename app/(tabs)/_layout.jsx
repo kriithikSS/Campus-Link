@@ -19,8 +19,8 @@ export default function TabsLayout() {
         tabBarIcon:({color})=><MaterialIcons name="favorite" size={24} color={color} />
       }} />
       
-      <Tabs.Screen name="inbox" options={{ title: 'Inbox',headerShown:false,
-        tabBarIcon:({color})=><MaterialCommunityIcons name="message-bulleted" size={26} color={color} />
+      <Tabs.Screen name="search" options={{ title: 'Search',headerShown:false,
+        tabBarIcon:({color})=><Feather name="search" size={26} color={color} />
        }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile',headerShown:false,
         tabBarIcon:({color})=><FontAwesome6 name="face-laugh-wink" size={26} color={color} />
