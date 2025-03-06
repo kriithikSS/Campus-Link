@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Shared from './../Shared/Shared';
 import { useUser } from '@clerk/clerk-expo';
 
-export default function MarkFav({SRM}) {
+export default function MarkFav({ SRM }) {
   const { user } = useUser();
   const [favList, setFavList] = useState([]);
   const [loading, setLoading] = useState(true); 
@@ -19,10 +19,10 @@ export default function MarkFav({SRM}) {
     setLoading(true);
     try {
       const result = await Shared.GetFavList(user);
-      console.log("Fetched favorites:", result);
-      setFavList(result.favorites ? result.favorites : []);
+      console.log("🟢 Fetched favorites:", result);
+      setFavList(result.favorites || []);
     } catch (error) {
-      console.error("Error fetching favorites:", error);
+      console.error("❌ Error fetching favorites:", error);
       setFavList([]);
     } finally {
       setLoading(false);
@@ -30,34 +30,34 @@ export default function MarkFav({SRM}) {
   };
 
   const AddToFav = async () => {
-    if (!SRM?.id) {
-      console.error("Invalid SRM ID");
+    if (!SRM?.name) {
+      console.error("❌ Invalid SRM Name");
       return;
     }
     
     try {
-      const favResult = [...(favList || []), SRM.id];  // Ensure it's always an array
+      const favResult = [...(favList || []), SRM.name]; // ✅ Store post name instead of ID
       await Shared.UpdateFav(user, favResult);
-      console.log("Added to favorites:", favResult);
+      console.log("🟢 Added to favorites:", favResult);
       setFavList(favResult);
     } catch (error) {
-      console.error("Error adding to favorites:", error);
+      console.error("❌ Error adding to favorites:", error);
     }
   };
 
   const removeFromFav = async () => {
-    if (!SRM?.id) {
-      console.error("Invalid SRM ID");
+    if (!SRM?.name) {
+      console.error("❌ Invalid SRM Name");
       return;
     }
   
     try {
-      const favResult = favList.filter(item => item !== SRM.id);
+      const favResult = favList.filter(item => item !== SRM.name); // ✅ Remove by name
       await Shared.UpdateFav(user, favResult);
-      console.log("Removed from favorites:", favResult);
+      console.log("🟢 Removed from favorites:", favResult);
       setFavList(favResult);
     } catch (error) {
-      console.error("Error removing from favorites:", error);
+      console.error("❌ Error removing from favorites:", error);
     }
   };
 
@@ -66,7 +66,7 @@ export default function MarkFav({SRM}) {
       {loading ? (
         <ActivityIndicator size="large" color="blue" />
       ) : (
-        favList?.includes(SRM?.id) ? (
+        favList?.includes(SRM?.name) ? ( // ✅ Check by name
           <Pressable onPress={removeFromFav}>
             <Ionicons name="heart" size={30} color="red" />
           </Pressable>

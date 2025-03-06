@@ -10,42 +10,47 @@ import SRMListItem from './../../components/Home/SRMListItem'
 export default function Favorite() {
 
   const { user } = useUser();
-  const [favIds, setFavIds] = useState([]);
   const [FavSRMList, setFavSRMList] = useState([]);
   const [loader, setLoader] = useState(false);
 
-  // Fetch favorite IDs and SRM items
+  // Fetch favorite post names from Firestore
   const GetFavSRMList = async () => {
     setLoader(true);
     const result = await Shared.GetFavList(user);
 
     if (result?.favorites && result.favorites.length > 0) {
-      setFavIds(result.favorites);
-      GetFavSRMIds(result.favorites);
+      console.log("🟢 Favorite post names:", result.favorites);
+      GetFavSRMByNames(result.favorites);
     } else {
-      setFavSRMList([]);  // Clear the list if no favorites
-      setLoader(false);    // Stop the loader
+      console.log("⚠️ No favorites found.");
+      setFavSRMList([]);
+      setLoader(false);
     }
   };
 
-  // Fetch SRM items based on favorite IDs
-  const GetFavSRMIds = async (favoriteIds) => {
-    if (favoriteIds.length > 0) {
-      const q = query(collection(db, 'Works'), where('id', 'in', favoriteIds));
-      const querySnapshot = await getDocs(q);
+  // Fetch SRM items based on favorite names
+  const GetFavSRMByNames = async (favoriteNames) => {
+    if (favoriteNames.length > 0) {
+      try {
+        const q = query(collection(db, 'Works'), where('name', 'in', favoriteNames)); // 🔥 Search by post name
+        const querySnapshot = await getDocs(q);
 
-      const fetchedSRMList = querySnapshot.docs.map(doc => doc.data());  // Map to extract data
-      setFavSRMList(fetchedSRMList);  // Replace list with fetched data
+        const fetchedSRMList = querySnapshot.docs.map(doc => doc.data());  
+        console.log("🟢 Fetched favorite SRM list:", fetchedSRMList);
+        setFavSRMList(fetchedSRMList);
+      } catch (error) {
+        console.error("❌ Error fetching SRM list:", error);
+      }
     }
-    setLoader(false);  // Stop the loader
+    setLoader(false);
   };
 
   // Handle pull-to-refresh
   const handleRefresh = () => {
-    GetFavSRMList();  // Re-fetch favorites when user pulls the list
+    GetFavSRMList();
   };
 
-  // This will trigger the refresh whenever the tab is focused
+  // Refresh when the tab is focused
   useFocusEffect(
     useCallback(() => {
       if (user) {
@@ -67,21 +72,15 @@ export default function Favorite() {
           data={FavSRMList}
           numColumns={2}
           renderItem={({ item }) => (
-            <View style={{
-              flex:1,
-              margin:10
-            }}>
+            <View style={{ flex:1, margin:10 }}>
               <SRMListItem SRM={item} />
             </View>
           )}
-          keyExtractor={(item, index) => index.toString()}  // Ensure unique keys for FlatList
-          
-
-          // Refresh control for pull-to-refresh functionality
+          keyExtractor={(item, index) => index.toString()}
           refreshControl={
             <RefreshControl
-              refreshing={loader}  // Controlled by the loader state
-              onRefresh={handleRefresh}  // Re-fetch data when pulled
+              refreshing={loader}
+              onRefresh={handleRefresh}
             />
           }
         />

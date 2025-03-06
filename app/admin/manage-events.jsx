@@ -92,53 +92,65 @@ export default function AddNew() {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-const onSubmit = async () => {
-    if (isSubmitting) return; // Prevent multiple clicks
-    setIsSubmitting(true); // Disable button while processing
-
-    if (!user) {
-        console.error("❌ No user found! Make sure you're logged in.");
-        Alert.alert("Error", "You must be logged in to add an event.");
-        setIsSubmitting(false);
-        return;
-    }
-
-    const requiredFields = ['name', 'category', 'Insta', 'Time', 'Mail', 'About'];
-    const missingFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
-
-    if (missingFields.length > 0) {
-        showToast('Please fill in all required fields.');
-        setIsSubmitting(false);
-        return;
-    }
-
-    try {
-        const imageUrl = await UploadImage();
-        if (!imageUrl) {
+    const onSubmit = async () => {
+        if (isSubmitting) return;
+        setIsSubmitting(true);
+    
+        if (!user) {
+            Alert.alert("Error", "You must be logged in to add an event.");
             setIsSubmitting(false);
             return;
         }
-
-        const updatedFormData = { 
-            ...formData, 
-            imageUrl,
-            adminEmail: user.primaryEmailAddress.emailAddress // ✅ Store admin's email
-        };
-
-        await addDoc(collection(db, 'Works'), updatedFormData);
-        showToast('Event added successfully!');
-        setFormData({}); // Clear form after submission
-        setImage(null);
-    } catch (error) {
-        console.error('❌ Failed to add event:', error);
-        showToast('Failed to add event.');
-    } finally {
-        setIsSubmitting(false); // Re-enable button after submission
-    }
-};
-
     
-
+        const requiredFields = ['name', 'category', 'Insta', 'Time', 'Mail', 'About'];
+        const missingFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
+    
+        if (missingFields.length > 0) {
+            showToast('Please fill in all required fields.');
+            setIsSubmitting(false);
+            return;
+        }
+    
+        try {
+            // ✅ Check if a post with the same name already exists
+            const snapshot = await getDocs(collection(db, 'Works'));
+            const existingPosts = snapshot.docs.map(doc => doc.data().name.toLowerCase());
+    
+            if (existingPosts.includes(formData.name.toLowerCase())) {
+                showToast('A post with this name already exists.');
+                setIsSubmitting(false);
+                return;
+            }
+    
+            const imageUrl = await UploadImage();
+            if (!imageUrl) {
+                setIsSubmitting(false);
+                return;
+            }
+    
+            const updatedFormData = { 
+                ...formData, 
+                imageUrl,
+                views: 0,  // 🔥 Set views to 0 when creating a new post
+                adminEmail: user.primaryEmailAddress.emailAddress 
+            };
+    
+            await addDoc(collection(db, 'Works'), updatedFormData);
+            showToast('Event added successfully!');
+            setFormData({});
+            setImage(null);
+        } catch (error) {
+            console.error('❌ Failed to add event:', error);
+            showToast('Failed to add event.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    
+    
+    
+    
     return (
         <ScrollView style={{ padding: 20 }}>
             <Text style={{ fontFamily: 'outfit-med' }}>Add New</Text>
