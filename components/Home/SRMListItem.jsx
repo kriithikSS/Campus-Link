@@ -8,20 +8,23 @@ export default function SRMListItem({ SRM }) {
 
   return (
     <TouchableOpacity 
-      onPress={() => {
-        console.log("✅ Navigating with:", SRM); // Debugging
-        router.push({
-          pathname: '/SRM-details',
-          params: {
-            name: SRM.name,
-            imageUrl: encodeURIComponent(SRM.imageUrl),//explicit declaration
-            About: SRM.About, // ✅ Ensure About is passed
-            Insta: SRM.Insta,
-            Time: SRM.Time,
-            Mail: SRM.Mail
-          }
-        });
-      }}
+    onPress={() => {
+      console.log("✅ Navigating with Firestore Doc ID:", SRM.id); // Debugging
+      router.push({
+        pathname: '/SRM-details',
+        params: {
+          id: SRM.id, // ✅ Firestore Document ID
+          name: SRM.name,
+          imageUrl: encodeURIComponent(SRM.imageUrl),
+          About: SRM.About,
+          Insta: SRM.Insta,
+          Time: SRM.Time,
+          Mail: SRM.Mail
+        }
+      });
+    }}
+    
+    
       style={{
         padding: 10,
         marginRight: 15,

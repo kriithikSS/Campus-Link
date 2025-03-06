@@ -20,14 +20,25 @@ const GetFavList = async (user) => {
 };
 
 const UpdateFav = async (user, favorites) => {
-  const docRef = doc(db, 'userfav', user?.primaryEmailAddress?.emailAddress);
+  if (!user?.primaryEmailAddress?.emailAddress) {
+    console.error("Invalid user email");
+    return;
+  }
+
+  if (!Array.isArray(favorites)) {
+    console.error("Invalid favorites list:", favorites);
+    return;
+  }
+
+  const docRef = doc(db, 'userfav', user.primaryEmailAddress.emailAddress);
+  
   try {
     await updateDoc(docRef, {
-      favorites: favorites,
+      favorites: favorites.filter(Boolean), // Remove undefined/null values
     });
+    console.log("Favorites updated successfully:", favorites);
   } catch (error) {
-    console.error('Error updating favorites:', error); // Log the error for debugging
-    throw error; // Re-throw error for further handling
+    console.error('Error updating favorites:', error);
   }
 };
 

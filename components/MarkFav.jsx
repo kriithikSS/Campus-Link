@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import Shared from './../Shared/Shared';
 import { useUser } from '@clerk/clerk-expo';
 
-export default function MarkFav({ SRM }) {
+export default function MarkFav({SRM}) {
   const { user } = useUser();
   const [favList, setFavList] = useState([]);
   const [loading, setLoading] = useState(true); 
@@ -30,8 +30,13 @@ export default function MarkFav({ SRM }) {
   };
 
   const AddToFav = async () => {
+    if (!SRM?.id) {
+      console.error("Invalid SRM ID");
+      return;
+    }
+    
     try {
-      const favResult = [...favList, SRM?.id];
+      const favResult = [...(favList || []), SRM.id];  // Ensure it's always an array
       await Shared.UpdateFav(user, favResult);
       console.log("Added to favorites:", favResult);
       setFavList(favResult);
@@ -41,8 +46,13 @@ export default function MarkFav({ SRM }) {
   };
 
   const removeFromFav = async () => {
+    if (!SRM?.id) {
+      console.error("Invalid SRM ID");
+      return;
+    }
+  
     try {
-      const favResult = favList.filter(item => item !== SRM?.id);
+      const favResult = favList.filter(item => item !== SRM.id);
       await Shared.UpdateFav(user, favResult);
       console.log("Removed from favorites:", favResult);
       setFavList(favResult);

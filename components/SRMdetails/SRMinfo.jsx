@@ -1,43 +1,35 @@
-import { useEffect, useState } from 'react';
-import { View, Text, Image, ActivityIndicator } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { View, Text, Image } from 'react-native'
+import React from 'react'
+import Colors from '../../constants/Colors'
+import MarkFav from '../MarkFav';
 
-export default function SRMinfo() {
-    const route = useRoute();
-    const { name, imageUrl } = route.params;
-    const decodedImageUrl = decodeURIComponent(imageUrl);
-    const [validImageUrl, setValidImageUrl] = useState(null);
-    const [loading, setLoading] = useState(true);
+export default function SRMinfo({SRM}) {
+  return (
+    <View>
+      <Image source={{uri:SRM.imageUrl}}
+      style={{
+        width:'100%',
+        height:300,
+        objectFit:'cover'
+      }}
+      />
+      <View style={{
+        padding:20,
+        display:'flex',
+        flexDirection:'row',
+        justifyContent:'space-between',
+        alignItems:'center',
 
-    console.log("✅ Received Image URL:", imageUrl);
-
-    useEffect(() => {
-        fetch(decodedImageUrl, { method: "HEAD" }) // ✅ Check if image exists
-            .then((res) => {
-                if (res.ok) {
-                    setValidImageUrl(decodedImageUrl);
-                } else {
-                    console.log("❌ Invalid Image URL:", res.status, res.statusText);
-                }
-            })
-            .catch((error) => console.log("❌ Image Fetch Error:", error))
-            .finally(() => setLoading(false));
-    }, [decodedImageUrl]);
-
-    return (
+      }}>
         <View>
-            {loading ? (
-                <ActivityIndicator size="large" color="blue" />
-            ) : validImageUrl ? (
-                <Image
-                    source={{ uri: validImageUrl }}
-                    style={{ width: '100%', height: 300, resizeMode: 'cover' }}
-                />
-            ) : (
-                <Text>No Image Available</Text>
-            )}
-
-            <Text style={{ fontSize: 20, fontWeight: 'bold' }}>{name}</Text>
+          <Text style={{
+            fontFamily:'outfit-bold',
+            fontSize:23
+          }}>{SRM?.name}</Text>
+          
         </View>
-    );
+        <MarkFav SRM={SRM}/>
+      </View>
+    </View>
+  )
 }
