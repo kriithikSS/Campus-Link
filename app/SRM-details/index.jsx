@@ -1,8 +1,10 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useLocalSearchParams, useNavigation } from 'expo-router'
-import { doc, updateDoc, increment } from "firebase/firestore"; // 🔥 Import Firestore
+import { doc, updateDoc, increment, setDoc, getDoc } from "firebase/firestore"; // 🔥 Import Firestore
 import { db } from '../../config/FirebaseConfig';
+import { useUser } from "@clerk/clerk-expo"; // 🔥 Import Clerk for authentication
+import { Linking } from "react-native"; // 🔥 For opening Google Form links
 import SRMinfo from '../../components/SRMdetails/SRMinfo';
 import SRMsubinfo from '../../components/SRMdetails/SRMsubinfo';
 import About from '../../components/SRMdetails/About';
@@ -12,6 +14,8 @@ import Colors from '../../constants/Colors';
 export default function SRMdetails() {
   const SRM = useLocalSearchParams();  // 🔥 Get SRM details
   const navigation = useNavigation();
+  const { user } = useUser(); // 🔥 Get logged-in user info
+  const [isApplied, setIsApplied] = useState(false); // 🔥 Check if user has applied
 
   useEffect(() => {
     navigation.setOptions({
@@ -22,7 +26,11 @@ export default function SRMdetails() {
     if (SRM.id) {
       incrementViews(SRM.id);  // 🔥 Increment views when the post is opened
     }
-  }, []);
+
+    if (user) {
+      checkIfApplied(); // 🔥 Check if the user has already applied
+    }
+  }, [user]);
 
   // 🔥 Function to increment views in Firestore
   const incrementViews = async (postId) => {
@@ -36,6 +44,60 @@ export default function SRMdetails() {
       console.error("❌ Error updating views:", error);
     }
   };
+
+  // 🔥 Function to check if user has already applied
+  const checkIfApplied = async () => {
+    if (!user) return;
+
+    const userEmail = user.primaryEmailAddress.emailAddress;
+    const eventName = SRM.name;
+    const applicationRef = doc(db, "Applications", `${userEmail}_${eventName}`);
+    const applicationSnap = await getDoc(applicationRef);
+
+    if (applicationSnap.exists()) {
+      setIsApplied(true);
+    }
+  };
+
+  // 🔥 Function to apply for the event
+  const ApplyToEvent = async () => {
+    if (!user) {
+        alert("Please log in to apply.");
+        return;
+    }
+
+    const userEmail = user.primaryEmailAddress.emailAddress;
+    const eventName = SRM.name;
+    const eventFormURL = SRM.formUrl || "https://default-form-url.com"; // 🔥 Set a default URL
+
+    if (!eventFormURL || eventFormURL === "undefined") {
+        alert("Error: No Google Form link found for this event.");
+        return;
+    }
+
+    try {
+        const applicationRef = doc(db, "Applications", `${userEmail}_${eventName}`);
+        const applicationSnap = await getDoc(applicationRef);
+
+        if (applicationSnap.exists()) {
+            alert("You have already applied for this event.");
+        } else {
+            await setDoc(applicationRef, {
+                userEmail,
+                eventName,
+                formUrl: eventFormURL,
+                status: "Pending", 
+            });
+            alert("Successfully applied! Redirecting to Google Form...");
+            setIsApplied(true); 
+            Linking.openURL(eventFormURL);
+        }
+    } catch (error) {
+        console.error("❌ Error applying to event:", error);
+        alert("Failed to apply. Try again later.");
+    }
+};
+
 
   return (
     <View>
@@ -52,14 +114,20 @@ export default function SRMdetails() {
         <View style={{height:70}} />
       </ScrollView>
 
-      {/* Contact/Join us button */}
+      {/* Apply Button */}
       <View style={styles?.bottomContainer}>
-        <TouchableOpacity style={styles.applybtn}>
+        <TouchableOpacity 
+          style={[styles.applybtn, isApplied && { backgroundColor: 'gray' }]} 
+          onPress={ApplyToEvent}
+          disabled={isApplied} // Disable button if already applied
+        >
           <Text style={{
             textAlign: 'center',
             fontFamily: 'outfit-med',
             fontSize: 20
-          }}>Apply</Text>
+          }}>
+            {isApplied ? "✅ Applied" : "Apply"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>

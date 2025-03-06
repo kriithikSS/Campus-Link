@@ -1,17 +1,20 @@
-import { View, Text, FlatList } from 'react-native'
+import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Category from './Category'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import {db} from '../../config/FirebaseConfig'
 import SRMListItem from './SRMListItem'
 
-export default function SRMListByCategory() {
+const { width } = Dimensions.get('window');
 
-  const [SRMList,setSRMList]=useState([]);
-  const [loader,setLoader]=useState(false);
-  useEffect(()=>{
+export default function SRMListByCategory() {
+  const [SRMList, setSRMList] = useState([]);
+  const [loader, setLoader] = useState(false);
+  
+  useEffect(() => {
     GetSRMList('Clubs')
-  },[])
+  }, [])
+  
   const GetSRMList = async (category) => {
     setLoader(true);
     setSRMList([]); // Clear list before fetching
@@ -20,7 +23,7 @@ export default function SRMListByCategory() {
     const querySnapshot = await getDocs(q);
   
     const fetchedList = querySnapshot.docs.map(doc => ({
-      id: doc.id,  // ✅ Include Firestore document ID
+      id: doc.id,  // Include Firestore document ID
       ...doc.data()
     }));
   
@@ -29,17 +32,36 @@ export default function SRMListByCategory() {
   };
   
   return (
-    <View>
-      <Category category={(value)=>GetSRMList(value)}/>
+    <View style={styles.container}>
+      <Category category={(value) => GetSRMList(value)} />
       <FlatList
-  data={SRMList}
-  style={{ marginTop: 10 }}
-  horizontal={true}
-  refreshing={loader}
-  onRefresh={() => GetSRMList('Clubs')}
-  renderItem={({ item }) => <SRMListItem SRM={item} />}
-  keyExtractor={(item) => item.id} // ✅ Use Firestore ID as the key
-/>
+        data={SRMList}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        refreshing={loader}
+        onRefresh={() => GetSRMList('Clubs')}
+        renderItem={({ item }) => (
+          <SRMListItem SRM={item} />
+        )}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+      />
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    marginTop: 10,
+  },
+  row: {
+    flex: 1,
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  listContent: {
+    paddingBottom: 20,
+  }
+});
