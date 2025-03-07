@@ -159,7 +159,7 @@ const AdminDashboard = () => {
             </View>
             
             <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-              <Ionicons name="refresh" size={20} color={Colors.PRIMARY} />
+              <Ionicons name="refresh" size={30} color={Colors.PRIMARY} />
             </TouchableOpacity>
             
             <View style={styles.avatarContainer}>
@@ -335,14 +335,21 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
   },
+  absoluteRefresh: {
+    position: "absolute",
+    top: 10, 
+    right: 10, 
+    zIndex: 10, // Ensures it's above other elements
+},
   refreshButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EDF2F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+        width: 40,
+        left: 40,
+        height: 40,
+        borderRadius: 18,
+        backgroundColor: '#EDF2F7',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
   avatarContainer: {
     width: 50,
     height: 50,

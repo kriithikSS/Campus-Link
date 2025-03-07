@@ -1,5 +1,8 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from "react-native";
-import React, { useEffect, useState } from "react";
+import { 
+    View, Text, FlatList, TouchableOpacity, ActivityIndicator, 
+    StyleSheet, RefreshControl, Alert 
+} from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
 import { collection, getDocs, doc, deleteDoc } from "firebase/firestore";
 import { db } from "../../config/FirebaseConfig";
 import { useUser } from "@clerk/clerk-expo";
@@ -9,7 +12,7 @@ export default function MyRegisteredEvents() {
     const { user } = useUser();
     const [registeredEvents, setRegisteredEvents] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState("all"); // "all", "pending", "accepted"
+    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         if (user) fetchRegisteredEvents();
@@ -25,148 +28,115 @@ export default function MyRegisteredEvents() {
 
             setRegisteredEvents(events);
         } catch (error) {
-            console.error("Error fetching registered events:", error);
+            console.error("❌ Error fetching registered events:", error);
+            Alert.alert("Error", "Could not load your events. Please try again later.");
         } finally {
             setLoading(false);
+            setRefreshing(false); // Stop refreshing animation
         }
     };
 
-    const withdrawApplication = async (eventId, status, eventName) => {
-        if (status === "Accepted") {
+    // ✅ Pull-to-refresh function
+    const onRefresh = useCallback(() => {
+        setRefreshing(true);
+        fetchRegisteredEvents();
+    }, []);
+
+    // ✅ Prevents withdrawal if Accepted or Rejected
+    const withdrawApplication = async (eventId, status) => {
+        if (status === "Accepted" || status === "Rejected") {
             Alert.alert(
                 "Cannot Withdraw",
-                "You cannot withdraw from an accepted event. Please contact the organizer.",
+                `You cannot withdraw from a ${status.toLowerCase()} event.`,
                 [{ text: "OK" }]
             );
             return;
         }
 
-        Alert.alert(
-            "Withdraw Application",
-            `Are you sure you want to withdraw your application for "${eventName}"?`,
-            [
-                { text: "Cancel", style: "cancel" },
-                { 
-                    text: "Withdraw", 
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            await deleteDoc(doc(db, "Applications", eventId));
-                            Alert.alert("Success", "Application withdrawn successfully.");
-                            fetchRegisteredEvents();
-                        } catch (error) {
-                            console.error("Error withdrawing application:", error);
-                            Alert.alert("Error", "Failed to withdraw application. Please try again.");
-                        }
-                    }
-                }
-            ]
-        );
-    };
-
-    const filteredEvents = filter === "all" 
-        ? registeredEvents 
-        : registeredEvents.filter(event => event.status.toLowerCase() === filter);
-
-    const getStatusIcon = (status) => {
-        switch(status) {
-            case "Accepted":
-                return { name: "checkmark-circle", color: "#059669" };
-            case "Pending":
-                return { name: "time", color: "#D97706" };
-            case "Rejected":
-                return { name: "close-circle", color: "#EF4444" };
-            default:
-                return { name: "help-circle", color: "#6B7280" };
+        try {
+            await deleteDoc(doc(db, "Applications", eventId));
+            Alert.alert("Success", "Application withdrawn successfully.");
+            fetchRegisteredEvents(); // Refresh list
+        } catch (error) {
+            console.error("❌ Error withdrawing application:", error);
+            Alert.alert("Error", "Failed to withdraw application. Please try again.");
         }
     };
 
+    const getStatusColor = (status) => {
+        switch (status) {
+            case "Pending": return "#F59E0B"; // Amber
+            case "Accepted": return "#10B981"; // Green
+            case "Rejected": return "#EF4444"; // Red
+            default: return "#6B7280"; // Gray
+        }
+    };
+
+    const getStatusIcon = (status) => {
+        switch (status) {
+            case "Pending": return "hourglass-outline";
+            case "Accepted": return "checkmark-circle";
+            case "Rejected": return "close-circle";
+            default: return "help-circle";
+        }
+    };
+
+    const renderEmptyList = () => (
+        <View style={styles.emptyContainer}>
+            <Ionicons name="calendar-outline" size={64} color="#CBD5E1" />
+            <Text style={styles.emptyText}>You haven't registered for any events yet</Text>
+        </View>
+    );
+
     return (
         <View style={styles.container}>
-            <View style={styles.header}>
-                <Text style={styles.title}>My Applications</Text>
-                <Text style={styles.subtitle}>Track your event applications</Text>
-            </View>
+            <Text style={styles.title}>My Registered Events</Text>
 
-            <View style={styles.filterContainer}>
-                <TouchableOpacity 
-                    style={[styles.filterButton, filter === "all" && styles.filterButtonActive]}
-                    onPress={() => setFilter("all")}>
-                    <Text style={[styles.filterText, filter === "all" && styles.filterTextActive]}>All</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.filterButton, filter === "pending" && styles.filterButtonActive]}
-                    onPress={() => setFilter("pending")}>
-                    <Text style={[styles.filterText, filter === "pending" && styles.filterTextActive]}>Pending</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.filterButton, filter === "accepted" && styles.filterButtonActive]}
-                    onPress={() => setFilter("accepted")}>
-                    <Text style={[styles.filterText, filter === "accepted" && styles.filterTextActive]}>Accepted</Text>
-                </TouchableOpacity>
-            </View>
-
-            {loading ? (
+            {loading && !refreshing ? (
                 <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#4F46E5" />
-                    <Text style={styles.loadingText}>Loading your applications...</Text>
-                </View>
-            ) : filteredEvents.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <Ionicons name="calendar-outline" size={64} color="#9CA3AF" />
-                    <Text style={styles.emptyText}>No applications found</Text>
-                    <Text style={styles.emptySubtext}>
-                        {filter !== "all" 
-                            ? `You don't have any ${filter} applications`
-                            : "You haven't applied to any events yet"}
-                    </Text>
+                    <ActivityIndicator size="large" color="#0891B2" />
+                    <Text style={styles.loadingText}>Loading your events...</Text>
                 </View>
             ) : (
                 <FlatList
-                    data={filteredEvents}
+                    data={registeredEvents}
                     keyExtractor={(item) => item.id}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.listContent}
-                    renderItem={({ item }) => {
-                        const statusIcon = getStatusIcon(item.status);
-                        
-                        return (
-                            <View style={styles.card}>
-                                <View style={styles.eventHeader}>
-                                    <View style={styles.eventIconContainer}>
-                                        <Ionicons name="calendar" size={20} color="#4F46E5" />
-                                    </View>
-                                    <View style={styles.eventDetails}>
-                                        <Text style={styles.eventName}>{item.eventName}</Text>
-                                        <View style={styles.statusContainer}>
-                                            <Ionicons name={statusIcon.name} size={16} color={statusIcon.color} />
-                                            <Text style={[styles.statusText, { color: statusIcon.color }]}>
-                                                {item.status}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                </View>
-                                
-                                <View style={styles.cardFooter}>
-                                    <Text style={styles.dateText}>Applied on {new Date().toLocaleDateString()}</Text>
-                                    
-                                    {item.status === "Accepted" ? (
-                                        <View style={styles.confirmedBadge}>
-                                            <Ionicons name="checkmark" size={16} color="#059669" />
-                                            <Text style={styles.confirmedText}>Confirmed</Text>
-                                        </View>
-                                    ) : (
-                                        <TouchableOpacity 
-                                            style={styles.withdrawButton}
-                                            onPress={() => withdrawApplication(item.id, item.status, item.eventName)}>
-                                            <Ionicons name="close" size={16} color="#EF4444" />
-                                            <Text style={styles.withdrawText}>Withdraw</Text>
-                                        </TouchableOpacity>
-                                    )}
+                    refreshControl={
+                        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#0891B2"]} />
+                    }
+                    ListEmptyComponent={renderEmptyList}
+                    renderItem={({ item }) => (
+                        <View style={styles.eventCard}>
+                            <View style={styles.eventHeader}>
+                                <Text style={styles.eventName}>{item.eventName}</Text>
+                                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) + "20" }]}>
+                                    <Ionicons name={getStatusIcon(item.status)} size={16} color={getStatusColor(item.status)} />
+                                    <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+                                        {item.status}
+                                    </Text>
                                 </View>
                             </View>
-                        );
-                    }}
+                            
+                            <View style={styles.actionsContainer}>
+                                <TouchableOpacity 
+                                    style={[
+                                        styles.actionButton,
+                                        (item.status === "Accepted" || item.status === "Rejected") 
+                                            ? styles.actionButtonDisabled 
+                                            : styles.actionButtonDelete
+                                    ]}
+                                    onPress={() => withdrawApplication(item.id, item.status)}
+                                    disabled={item.status === "Accepted" || item.status === "Rejected"}
+                                >
+                                    <Text style={(item.status === "Accepted" || item.status === "Rejected") ? styles.actionTextDisabled : styles.actionTextDelete}>
+                                        {item.status === "Accepted" ? "Attendance Confirmed" 
+                                         : item.status === "Rejected" ? "Application Rejected" 
+                                         : "Withdraw Application"}
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    )}
                 />
             )}
         </View>
@@ -174,157 +144,20 @@ export default function MyRegisteredEvents() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F9FAFB",
-        padding: 16,
-    },
-    header: {
-        marginBottom: 24,
-        marginTop:20
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: "bold",
-        color: "#111827",
-    },
-    subtitle: {
-        fontSize: 14,
-        color: "#6B7280",
-        marginTop: 4,
-    },
-    filterContainer: {
-        flexDirection: "row",
-        marginBottom: 16,
-    },
-    filterButton: {
-        paddingVertical: 8,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        marginRight: 8,
-        backgroundColor: "#F3F4F6",
-    },
-    filterButtonActive: {
-        backgroundColor: "#4F46E5",
-    },
-    filterText: {
-        fontSize: 14,
-        color: "#6B7280",
-    },
-    filterTextActive: {
-        color: "#FFFFFF",
-    },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    loadingText: {
-        marginTop: 16,
-        fontSize: 16,
-        color: "#6B7280",
-    },
-    emptyContainer: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    emptyText: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "#374151",
-        marginTop: 16,
-    },
-    emptySubtext: {
-        fontSize: 14,
-        color: "#6B7280",
-        marginTop: 8,
-        textAlign: "center",
-    },
-    listContent: {
-        paddingBottom: 20,
-    },
-    card: {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 12,
-        padding: 16,
-        marginBottom: 12,
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-    },
-    eventHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    eventIconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: "#EEF2FF",
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: 12,
-    },
-    eventDetails: {
-        flex: 1,
-    },
-    eventName: {
-        fontSize: 16,
-        fontWeight: "600",
-        color: "#111827",
-    },
-    statusContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 4,
-    },
-    statusText: {
-        fontSize: 14,
-        marginLeft: 4,
-    },
-    cardFooter: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        borderTopWidth: 1,
-        borderTopColor: "#F3F4F6",
-        paddingTop: 12,
-        marginTop: 4,
-    },
-    dateText: {
-        fontSize: 12,
-        color: "#6B7280",
-    },
-    confirmedBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#DCFCE7",
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-    },
-    confirmedText: {
-        color: "#059669",
-        fontSize: 12,
-        fontWeight: "500",
-        marginLeft: 4,
-    },
-    withdrawButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#FEE2E2",
-        paddingVertical: 6,
-        paddingHorizontal: 12,
-        borderRadius: 16,
-    },
-    withdrawText: {
-        color: "#EF4444",
-        fontSize: 12,
-        fontWeight: "500",
-        marginLeft: 4,
-    },
+    container: { flex: 1, padding: 16, backgroundColor: "#F8FAFC" },
+    title: { fontSize: 24, fontWeight: "bold", marginBottom: 16, color: "#0F172A",marginTop:20 },
+    loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+    loadingText: { marginTop: 12, fontSize: 16, color: "#64748B" },
+    eventCard: { backgroundColor: "#FFFFFF", borderRadius: 12, padding: 16, marginBottom: 12, elevation: 2 },
+    eventHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+    eventName: { fontSize: 18, fontWeight: "600", color: "#1E293B" },
+    statusBadge: { flexDirection: "row", alignItems: "center", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 },
+    statusText: { fontSize: 14, fontWeight: "500", marginLeft: 4 },
+    actionsContainer: { marginTop: 12, flexDirection: "row", justifyContent: "flex-end" },
+    actionButtonDelete: { backgroundColor: "#FEE2E2" },
+    actionButtonDisabled: { backgroundColor: "#F1F5F9" },
+    actionTextDelete: { color: "#EF4444", fontWeight: "500" },
+    actionTextDisabled: { color: "#94A3B8", fontWeight: "500" },
+    emptyContainer: { flex: 1, justifyContent: "center", alignItems: "center", paddingBottom: 50 },
+    emptyText: { fontSize: 16, color: "#94A3B8", marginTop: 16, textAlign: "center" },
 });

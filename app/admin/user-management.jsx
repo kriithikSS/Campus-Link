@@ -4,7 +4,7 @@ import {
   Alert, TouchableOpacity, Modal, TextInput, SafeAreaView, 
   ScrollView, Platform, ToastAndroid, RefreshControl 
 } from 'react-native';
-import { collection, getDocs, query, where, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, deleteDoc, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db, storage } from '../../config/FirebaseConfig';
 import { useUser } from "@clerk/clerk-expo";
 import { Picker } from '@react-native-picker/picker';
@@ -12,7 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Colors from "../../constants/Colors";
 import Animated, { FadeIn, FadeOut, SlideInRight } from 'react-native-reanimated';
 import * as ImagePicker from 'expo-image-picker';
-import { ref, getDownloadURL, uploadBytes } from 'firebase/storage';
+import { getDownloadURL, uploadBytes} from 'firebase/storage';
+import { ref, deleteObject } from "firebase/storage";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
@@ -125,16 +126,39 @@ export default function UserManagement() {
 
     const confirmDeleteAction = async () => {
         if (!confirmDelete) return;
-        
+    
         try {
-            await deleteDoc(doc(db, "Works", confirmDelete));
+            // Retrieve the event document before deleting
+            const eventDoc = doc(db, "Works", confirmDelete);
+            const eventSnap = await getDoc(eventDoc);
+    
+            if (!eventSnap.exists()) {
+                showToast("Event not found!", true);
+                return;
+            }
+    
+            const eventData = eventSnap.data();
+            const imageUrl = eventData.imageUrl;
+    
+            // Extract the image path from the URL
+            if (imageUrl) {
+                const imagePath = decodeURIComponent(imageUrl.split('/o/')[1].split('?')[0]);
+                const imageRef = ref(storage, imagePath);
+    
+                // Delete the image from Firebase Storage
+                await deleteObject(imageRef);
+            }
+    
+            // Now delete the event from Firestore
+            await deleteDoc(eventDoc);
             setEvents((prevEvents) => prevEvents.filter(event => event.id !== confirmDelete));
-            showToast("Event deleted successfully");
+            showToast("Event and image deleted successfully");
+    
         } catch (error) {
-            console.error("Error deleting event:", error);
+            console.error("Error deleting event and image:", error);
             showToast("Failed to delete event", true);
         }
-        
+    
         setConfirmDelete(null);
     };
 

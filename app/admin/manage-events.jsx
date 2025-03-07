@@ -413,7 +413,7 @@ export default function AddNew() {
                             <Text style={styles.buttonTextLoading}>Creating Event...</Text>
                         </View>
                     ) : (
-                        <Text style={styles.buttonText}>Create Event</Text>
+                        <Text style={styles.buttonText}>Create Post</Text>
                     )}
                 </TouchableOpacity>
             </View>

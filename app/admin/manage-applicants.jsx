@@ -1,4 +1,4 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet, Image } from "react-native";
+import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
 import React, { useEffect, useState } from "react";
 import { collection, getDocs, doc, updateDoc, query, where } from "firebase/firestore";
 import { db } from "../../config/FirebaseConfig";
@@ -9,6 +9,7 @@ export default function ManageApplicants() {
     const { user } = useUser();
     const [applicants, setApplicants] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false); // Added for Pull-to-Refresh
     const [filter, setFilter] = useState("all"); // "all", "pending", "accepted"
 
     useEffect(() => {
@@ -40,6 +41,12 @@ export default function ManageApplicants() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        await fetchApplicants(user.primaryEmailAddress.emailAddress);
+        setRefreshing(false);
     };
 
     const acceptApplicant = async (applicantId) => {
@@ -116,11 +123,6 @@ export default function ManageApplicants() {
                 <View style={styles.emptyContainer}>
                     <Ionicons name="people-outline" size={64} color="#9CA3AF" />
                     <Text style={styles.emptyText}>No applicants found</Text>
-                    <Text style={styles.emptySubtext}>
-                        {filter !== "all" 
-                            ? `You don't have any ${filter} applications`
-                            : "You don't have any applications for your events yet"}
-                    </Text>
                 </View>
             ) : (
                 <FlatList
@@ -128,6 +130,8 @@ export default function ManageApplicants() {
                     keyExtractor={(item) => item.id}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.listContent}
+                    refreshing={refreshing} // Pull-to-Refresh indicator
+                    onRefresh={handleRefresh} // Pull-to-Refresh action
                     renderItem={({ item }) => (
                         <View style={styles.card}>
                             <View style={styles.cardHeader}>
@@ -148,7 +152,7 @@ export default function ManageApplicants() {
                                 </View>
                                 {renderStatusBadge(item.status)}
                             </View>
-                            
+
                             <View style={styles.actionContainer}>
                                 {item.status === "Pending" ? (
                                     <>
@@ -183,6 +187,34 @@ export default function ManageApplicants() {
 }
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: "#F9FAFB",
+        padding: 16,
+    },
+    header: {
+        marginBottom: 24,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: "bold",
+        color: "#111827",
+    },
+    subtitle: {
+        fontSize: 14,
+        color: "#6B7280",
+        marginTop: 4,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    loadingText: {
+        marginTop: 16,
+        fontSize: 16,
+        color: "#6B7280",
+    },
     container: {
         flex: 1,
         backgroundColor: "#F9FAFB",
