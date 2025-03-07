@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, ScrollView, SafeAreaView } from 'react-native';
+import { StyleSheet, View, SafeAreaView, StatusBar } from 'react-native';
 import React from 'react';
 import {useAuth} from '@clerk/clerk-expo'
 import Header from '../../components/Home/Header';
@@ -9,6 +9,7 @@ import Colors from '../../constants/Colors';
 export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={Colors.WHITE} />
       <View style={styles.container}>
         {/* Header */}
         <Header/>
@@ -28,7 +29,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.WHITE,
   },
   container: {
     flex: 1,

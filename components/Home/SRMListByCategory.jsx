@@ -1,15 +1,15 @@
-import { View, Text, FlatList, StyleSheet, Dimensions } from 'react-native'
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native'
 import React, { useEffect, useState } from 'react'
 import Category from './Category'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import {db} from '../../config/FirebaseConfig'
 import SRMListItem from './SRMListItem'
-
-const { width } = Dimensions.get('window');
+import Colors from '../../constants/Colors'
 
 export default function SRMListByCategory() {
   const [SRMList, setSRMList] = useState([]);
   const [loader, setLoader] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('Clubs');
   
   useEffect(() => {
     GetSRMList('Clubs')
@@ -18,6 +18,7 @@ export default function SRMListByCategory() {
   const GetSRMList = async (category) => {
     setLoader(true);
     setSRMList([]); // Clear list before fetching
+    setSelectedCategory(category);
   
     const q = query(collection(db, 'Works'), where('category', '==', category));
     const querySnapshot = await getDocs(q);
@@ -33,20 +34,33 @@ export default function SRMListByCategory() {
   
   return (
     <View style={styles.container}>
-      <Category category={(value) => GetSRMList(value)} />
-      <FlatList
-        data={SRMList}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        refreshing={loader}
-        onRefresh={() => GetSRMList('Clubs')}
-        renderItem={({ item }) => (
-          <SRMListItem SRM={item} />
-        )}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-      />
+      <Category category={(value) => GetSRMList(value)} selectedCategory={selectedCategory} />
+      
+      {loader ? (
+        <View style={styles.loaderContainer}>
+          <ActivityIndicator size="large" color={Colors.PRIMARY} />
+          <Text style={styles.loadingText}>Loading {selectedCategory}...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={SRMList}
+          numColumns={2}
+          columnWrapperStyle={styles.row}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          renderItem={({ item }) => (
+            <SRMListItem SRM={item} />
+          )}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={
+            !loader && (
+              <View style={styles.emptyContainer}>
+                <Text style={styles.emptyText}>No items found in this category</Text>
+              </View>
+            )
+          }
+        />
+      )}
     </View>
   )
 }
@@ -54,14 +68,35 @@ export default function SRMListByCategory() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 10,
   },
   row: {
     flex: 1,
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   listContent: {
     paddingBottom: 20,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontFamily: 'outfit-med',
+    color: Colors.GRAY,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontFamily: 'outfit-med',
+    fontSize: 16,
+    color: Colors.GRAY,
+    textAlign: 'center',
   }
 });

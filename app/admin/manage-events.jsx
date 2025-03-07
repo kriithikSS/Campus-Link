@@ -15,7 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 export default function AddNew() {
     const navigation = useNavigation();
     const { user } = useUser();
-    const [formData, setFormData] = useState({});
+    const [formData, setFormData] = useState({ 
+        formUrl: '',
+        Time: new Date().toISOString().split('T')[0] // Default to current date
+    });
     const [selectedCategory, setSelectedCategory] = useState('');
     const [categories, setCategories] = useState([]);
     const [image, setImage] = useState();
@@ -80,13 +83,6 @@ export default function AddNew() {
                     delete fieldErrors.category;
                 }
                 break;
-            case 'Insta':
-                if (!value || value.trim() === '') {
-                    fieldErrors.Insta = 'Instagram ID is required';
-                } else {
-                    delete fieldErrors.Insta;
-                }
-                break;
             case 'Mail':
                 if (!value || value.trim() === '') {
                     fieldErrors.Mail = 'Email is required';
@@ -102,6 +98,18 @@ export default function AddNew() {
                 } else {
                     delete fieldErrors.About;
                 }
+                break;
+            case 'formUrl':
+                // Only validate if a value is provided
+                if (value && value.trim() !== '' && !/^https?:\/\//.test(value)) {
+                    fieldErrors.formUrl = 'Please enter a valid URL';
+                } else {
+                    delete fieldErrors.formUrl;
+                }
+                break;
+            case 'Insta':
+                // No validation needed as it's optional
+                delete fieldErrors.Insta;
                 break;
         }
         
@@ -153,13 +161,14 @@ export default function AddNew() {
     };
 
     const validateForm = () => {
-        const requiredFields = ['name', 'category', 'Insta', 'Time', 'Mail', 'About'];
+        // Modified to only include required fields
+        const requiredFields = ['name', 'category', 'Mail', 'About'];
         let formErrors = {};
         let isValid = true;
         
         requiredFields.forEach(field => {
             if (!formData[field] || formData[field].trim() === '') {
-                formErrors[field] = `${field === 'Time' ? 'Date' : field} is required`;
+                formErrors[field] = `${field} is required`;
                 isValid = false;
             }
         });
@@ -172,6 +181,12 @@ export default function AddNew() {
         // Email validation
         if (formData.Mail && !/^\S+@\S+\.\S+$/.test(formData.Mail)) {
             formErrors.Mail = 'Please enter a valid email';
+            isValid = false;
+        }
+        
+        // URL validation (only if provided)
+        if (formData.formUrl && formData.formUrl.trim() !== '' && !/^https?:\/\//.test(formData.formUrl)) {
+            formErrors.formUrl = 'Please enter a valid URL';
             isValid = false;
         }
         
@@ -211,15 +226,20 @@ export default function AddNew() {
                 return;
             }
     
-            const updatedFormData = { 
+            // Ensure current date is used if no date was selected
+            const finalFormData = { 
                 ...formData, 
                 imageUrl,
                 views: 0,
                 createdAt: new Date().toISOString(),
-                adminEmail: user.primaryEmailAddress.emailAddress 
+                adminEmail: user.primaryEmailAddress.emailAddress,
+                // Set defaults for optional fields if they're empty
+                Time: formData.Time || new Date().toISOString().split('T')[0],
+                formUrl: formData.formUrl || '',
+                Insta: formData.Insta || ''
             };
     
-            await addDoc(collection(db, 'Works'), updatedFormData);
+            await addDoc(collection(db, 'Works'), finalFormData);
             showToast('Event added successfully!');
             
             // Reset form after successful submission
@@ -302,32 +322,44 @@ export default function AddNew() {
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Instagram Handle *</Text>
+                        <Text style={styles.label}>Google Form URL (Optional)</Text>
+                        <TextInput
+                            style={[styles.input, errors.formUrl && styles.inputError]}
+                            onChangeText={(value) => handleInputChange('formUrl', value)}
+                            value={formData.formUrl || ''}
+                            placeholder="https://forms.google.com/..."
+                            placeholderTextColor={Colors.GRAY}
+                            keyboardType="url"
+                            autoCapitalize="none"
+                        />
+                        {errors.formUrl && <Text style={styles.errorText}>{errors.formUrl}</Text>}
+                    </View>
+
+                    <View style={styles.inputContainer}>
+                        <Text style={styles.label}>Instagram Handle (Optional)</Text>
                         <View style={styles.socialInputContainer}>
                             <Text style={styles.socialPrefix}>@</Text>
                             <TextInput
-                                style={[styles.socialInput, errors.Insta && styles.inputError]}
+                                style={styles.socialInput}
                                 onChangeText={(value) => handleInputChange('Insta', value)}
                                 value={formData.Insta || ''}
                                 placeholder="instagram_handle"
                                 placeholderTextColor={Colors.GRAY}
                             />
                         </View>
-                        {errors.Insta && <Text style={styles.errorText}>{errors.Insta}</Text>}
                     </View>
 
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Event Date *</Text>
+                        <Text style={styles.label}>Event Date (Optional)</Text>
                         <TouchableOpacity 
                             onPress={() => setShowDatePicker(true)} 
-                            style={[styles.input, errors.Time && styles.inputError]}
+                            style={styles.input}
                         >
                             <View style={styles.dateContainer}>
                                 <Ionicons name="calendar" size={20} color={Colors.GRAY} />
                                 <Text style={styles.dateText}>{date.toDateString()}</Text>
                             </View>
                         </TouchableOpacity>
-                        {errors.Time && <Text style={styles.errorText}>{errors.Time}</Text>}
 
                         {showDatePicker && (
                             <DateTimePicker

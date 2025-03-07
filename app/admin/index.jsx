@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Image, ActivityIndicator } from 'react-native';
-import { useUser } from '@clerk/clerk-expo';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, SafeAreaView, Image, ActivityIndicator, Alert } from 'react-native';
+import { useUser, useAuth } from '@clerk/clerk-expo';
 import { useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../config/FirebaseConfig';
@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const AdminDashboard = () => {
   const { user } = useUser();
+  const { signOut } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   
@@ -109,6 +110,13 @@ const AdminDashboard = () => {
       icon: 'arrow-back',
       route: '/(tabs)/home',
       color: '#6B7280'
+    },
+    {
+      title: 'Logout',
+      description: 'Sign out of your admin account',
+      icon: 'log-out',
+      route: 'logout',
+      color: '#EF4444'
     }
   ];
   
@@ -116,6 +124,21 @@ const AdminDashboard = () => {
     if (user) {
       fetchAnalyticsData(user.primaryEmailAddress.emailAddress);
     }
+  };
+  
+  const handleMenuPress = (route) => {
+    if (route === 'logout') {
+      Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Sign Out", onPress: () => { 
+            signOut(); 
+            router.replace("/login"); 
+          } 
+        }
+      ]);
+      return;
+    }
+    router.push(route);
   };
   
   return (
@@ -200,12 +223,17 @@ const AdminDashboard = () => {
             <TouchableOpacity 
               key={index}
               style={styles.menuCard} 
-              onPress={() => router.push(item.route)}
+              onPress={() => handleMenuPress(item.route)}
             >
               <View style={[styles.iconContainer, { backgroundColor: `${item.color}20` }]}>
                 <Ionicons name={item.icon} size={24} color={item.color} />
               </View>
-              <Text style={styles.menuItemText}>{item.title}</Text>
+              <Text style={[
+                styles.menuItemText, 
+                item.title === 'Logout' && styles.logoutText
+              ]}>
+                {item.title}
+              </Text>
               <Text style={styles.menuItemDescription} numberOfLines={2}>
                 {item.description}
               </Text>
@@ -254,6 +282,26 @@ const AdminDashboard = () => {
               <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
             </TouchableOpacity>
           )}
+          
+          <TouchableOpacity 
+            style={[styles.quickActionButton, { backgroundColor: '#EF4444' }]}
+            onPress={() => {
+              Alert.alert("Sign Out", "Are you sure you want to sign out?", [
+                { text: "Cancel", style: "cancel" },
+                { text: "Sign Out", onPress: () => { 
+                    signOut(); 
+                    router.replace("/login"); 
+                  } 
+                }
+              ]);
+            }}
+          >
+            <View style={styles.quickActionContent}>
+              <Ionicons name="log-out" size={22} color="#FFFFFF" />
+              <Text style={styles.quickActionText}>Logout</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -436,6 +484,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#111827',
     marginBottom: 8,
+  },
+  logoutText: {
+    color: '#EF4444',
   },
   menuItemDescription: {
     fontSize: 13,

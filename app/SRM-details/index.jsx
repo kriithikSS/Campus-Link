@@ -68,36 +68,73 @@ export default function SRMdetails() {
 
     const userEmail = user.primaryEmailAddress.emailAddress;
     const eventName = SRM.name;
-    const eventFormURL = SRM.formUrl || "https://default-form-url.com"; // 🔥 Set a default URL
-
-    if (!eventFormURL || eventFormURL === "undefined") {
-        alert("Error: No Google Form link found for this event.");
-        return;
-    }
-
+    
     try {
+        // Get the event document to check for formUrl (optional)
+        const eventRef = doc(db, "Works", SRM.id);
+        const eventDoc = await getDoc(eventRef);
+        
+        if (!eventDoc.exists()) {
+            alert("Event not found in database.");
+            return;
+        }
+        
+        const eventData = eventDoc.data();
+        const eventFormURL = eventData.formUrl || null; // formUrl is optional now
+        
+        // Check if user has already applied
         const applicationRef = doc(db, "Applications", `${userEmail}_${eventName}`);
         const applicationSnap = await getDoc(applicationRef);
 
         if (applicationSnap.exists()) {
             alert("You have already applied for this event.");
+            
+            // If there's a form URL and they've already applied, still offer to open the form
+            if (eventFormURL) {
+                try {
+                    const supported = await Linking.canOpenURL(eventFormURL);
+                    if (supported) {
+                        await Linking.openURL(eventFormURL);
+                    }
+                } catch (error) {
+                    console.error("Error opening URL:", error);
+                }
+            }
         } else {
+            // Create application document without requiring formUrl
             await setDoc(applicationRef, {
                 userEmail,
                 eventName,
-                formUrl: eventFormURL,
-                status: "Pending", 
+                formUrl: eventFormURL, // Can be null
+                status: "Pending",
+                appliedAt: new Date().toISOString() // Add timestamp for when they applied
             });
-            alert("Successfully applied! Redirecting to Google Form...");
-            setIsApplied(true); 
-            Linking.openURL(eventFormURL);
+            
+            setIsApplied(true);
+            
+            // If there's a form URL, open it, otherwise just confirm application
+            if (eventFormURL) {
+                alert("Successfully applied! Redirecting to Google Form...");
+                try {
+                    const supported = await Linking.canOpenURL(eventFormURL);
+                    if (supported) {
+                        await Linking.openURL(eventFormURL);
+                    } else {
+                        alert("Successfully applied!");
+                    }
+                } catch (error) {
+                    console.error("Error opening URL:", error);
+                    alert("Successfully applied! (Form couldn't be opened)");
+                }
+            } else {
+                alert("Successfully applied!");
+            }
         }
     } catch (error) {
         console.error("❌ Error applying to event:", error);
         alert("Failed to apply. Try again later.");
     }
-};
-
+  };
 
   return (
     <View>

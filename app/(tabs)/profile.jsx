@@ -12,6 +12,9 @@ export default function Profile() {
   const { isAdmin } = useAuth();
   const router = useRouter();
 
+  const userName = user?.fullName || "User";
+  const isLongName = userName.length > 20; // Adjust threshold if needed
+
   const Menu = [
     { id: 1, name: 'Favorites', icon: 'heart', path: '/(tabs)/favorite' },
     { id: 3, name: 'My Registered Events', icon: 'calendar', path: '/profile/my-events' },
@@ -36,16 +39,35 @@ export default function Profile() {
       {/* User Info */}
       <View style={styles.profileContainer}>
         <Image source={{ uri: user?.imageUrl }} style={styles.profileImage} />
-        <View>
-          <Text style={styles.userName}>{user?.fullName}</Text>
+        <View style={styles.textContainer}>
+          <TouchableOpacity onPress={() => Alert.alert("Full Name", userName)}>
+            <Text 
+              numberOfLines={isLongName ? 2 : 1} 
+              ellipsizeMode="tail"
+              adjustsFontSizeToFit
+              style={[styles.userName, isLongName && styles.longUserName]}>
+              {userName}
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.userEmail}>{user?.primaryEmailAddress?.emailAddress}</Text>
         </View>
       </View>
 
-      {/* Admin Dashboard */}
+      {/* Admin Dashboard - Improved UI */}
       {isAdmin && (
-        <TouchableOpacity style={styles.adminOption} onPress={() => router.replace('/admin')}>
-          <Text style={styles.adminOptionText}>Return to Admin Dashboard</Text>
+        <TouchableOpacity 
+          style={styles.adminOption} 
+          onPress={() => router.replace('/admin')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.adminIconContainer}>
+            <Ionicons name="shield-checkmark" size={24} color={Colors.WHITE} />
+          </View>
+          <View style={styles.adminTextContainer}>
+            <Text style={styles.adminOptionText}>Admin Dashboard</Text>
+            <Text style={styles.adminSubtitle}>Manage events, users and more</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={24} color={Colors.PRIMARY} />
         </TouchableOpacity>
       )}
 
@@ -55,7 +77,7 @@ export default function Profile() {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity style={styles.menuItem} onPress={() => handleMenuPress(item)}>
-            <Ionicons name={item.icon} size={28} color={Colors.PRIMARY} style={styles.icon} />
+            <Ionicons name={item.icon} size={30} color={Colors.PRIMARY} style={styles.icon} />
             <Text style={styles.menuText}>{item.name}</Text>
           </TouchableOpacity>
         )}
@@ -68,10 +90,61 @@ const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, backgroundColor: Colors.WHITE },
   profileContainer: { flexDirection: 'row', alignItems: 'center', marginBottom: 30, marginTop: 20 },
   profileImage: { width: 80, height: 80, borderRadius: 40, marginRight: 15 },
-  userName: { fontFamily: 'Roboto-bold', fontSize: 22, marginBottom: 5 },
+  textContainer: { flex: 1 }, // Allows text to take remaining space
+  userName: { 
+    fontFamily: 'Roboto-bold', 
+    fontSize: 22, 
+    marginBottom: 5, 
+    flexShrink: 1, 
+    maxWidth: '80%', 
+    textAlign: 'left'
+  },
+  longUserName: { 
+    fontSize: 18,  // Reduce size if name is long
+    maxWidth: '100%', 
+    flexWrap: 'wrap', 
+    lineHeight: 22  // Improves readability
+  },
   userEmail: { fontFamily: 'Roboto-reg', fontSize: 16, color: Colors.GRAY },
-  adminOption: { paddingVertical: 15, backgroundColor: Colors.LIGHT_PRIMARY, marginBottom: 10, alignItems: 'center', borderRadius: 8 },
-  adminOptionText: { fontFamily: 'Roboto-bold', fontSize: 16, color: Colors.PRIMARY },
+  
+  // Improved Admin Dashboard Button
+  adminOption: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 15,
+    backgroundColor: '#F0F5FF', // Light blue background
+    marginBottom: 20,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: Colors.PRIMARY,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  adminIconContainer: {
+    backgroundColor: Colors.PRIMARY,
+    padding: 10,
+    borderRadius: 10,
+    marginRight: 15,
+  },
+  adminTextContainer: {
+    flex: 1,
+  },
+  adminOptionText: { 
+    fontFamily: 'Roboto-bold', 
+    fontSize: 18, 
+    color: Colors.PRIMARY,
+  },
+  adminSubtitle: {
+    fontFamily: 'Roboto-reg',
+    fontSize: 14,
+    color: Colors.GRAY,
+    marginTop: 2,
+  },
+  
   menuItem: { flexDirection: 'row', alignItems: 'center', padding: 15, borderRadius: 10, backgroundColor: '#f5f5f5', marginVertical: 5 },
   icon: { padding: 10, backgroundColor: Colors.LIGHT_PRIMARY, borderRadius: 8 },
   menuText: { fontFamily: 'Roboto-med', fontSize: 18, marginLeft: 10 }
