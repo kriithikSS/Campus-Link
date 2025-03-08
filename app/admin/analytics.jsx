@@ -236,7 +236,12 @@ export default function Analytics() {
               <View style={styles.leaderboardStat}>
                 <Ionicons name="time-outline" size={16} color={Colors.TEXT_SECONDARY} />
                 <Text style={styles.leaderboardStatText}>
-                  {post.createdAt ? new Date(post.createdAt.toDate()).toLocaleDateString() : 'Unknown'}
+                <Text style={styles.leaderboardStatText}>
+  {post.createdAt && post.createdAt.toDate instanceof Function
+    ? new Date(post.createdAt.toDate()).toLocaleDateString()
+    : 'Unknown'}
+</Text>
+
                 </Text>
               </View>
             </View>

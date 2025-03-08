@@ -38,7 +38,7 @@ export default function SRMsubinfo({ SRM }) {
         />
         <SRMSubinfoCard 
           icon={require('./../../assets/images/calender1.png')}
-          title={'Event Time'}
+          title={'Event'}
           value={SRM?.Time}
         />
       </View>

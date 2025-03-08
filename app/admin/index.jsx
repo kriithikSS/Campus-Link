@@ -38,42 +38,63 @@ const AdminDashboard = () => {
   const fetchAnalyticsData = async (adminEmail) => {
     setLoading(true);
     try {
-      // Fetch all posts
-      const allPostsSnapshot = await getDocs(collection(db, 'Works'));
-      const allPosts = allPostsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Fetch admin's posts
-      const myPostsQuery = query(collection(db, 'Works'), where('adminEmail', '==', adminEmail));
-      const myPostsSnapshot = await getDocs(myPostsQuery);
-      const myPosts = myPostsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Fetch pending applications (you might need to adjust this based on your schema)
-      const pendingQuery = query(collection(db, 'Applications'), where('status', '==', 'pending'));
-      const pendingSnapshot = await getDocs(pendingQuery);
-      const pendingApplications = pendingSnapshot.docs.length;
-      
-      // Calculate basic analytics
-      const totalPosts = allPosts.length;
-      const myTotalPosts = myPosts.length;
-      const mostViewedPost = allPosts.reduce((max, post) => (post.views > (max?.views || 0) ? post : max), null);
-      const totalViews = allPosts.reduce((sum, post) => sum + (post.views || 0), 0);
-      const averageViews = totalPosts > 0 ? Math.round(totalViews / totalPosts) : 0;
-      
-      setStats({
-        posts: totalPosts,
-        myPosts: myTotalPosts,
-        topViewedPost: mostViewedPost,
-        averageViews: averageViews,
-        applicants: pendingApplications + Math.round(totalViews * 0.03), // Using a calculation similar to analytics.jsx
-        pending: pendingApplications
-      });
-      
+        // Fetch all posts
+        const allPostsSnapshot = await getDocs(collection(db, 'Works'));
+        const allPosts = allPostsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Fetch admin's posts
+        const myPostsQuery = query(collection(db, 'Works'), where('adminEmail', '==', adminEmail));
+        const myPostsSnapshot = await getDocs(myPostsQuery);
+        const myPosts = myPostsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        let totalApplicantsCount = 0;
+        let pendingApplicantsCount = 0;
+
+        if (myPosts.length > 0) {
+            const eventNames = myPosts.map(post => post.name);
+
+            // Fetch all applications (to count total applicants)
+            const allApplicantsQuery = query(
+                collection(db, 'Applications'),
+                where('eventName', 'in', eventNames)
+            );
+            const allApplicantsSnapshot = await getDocs(allApplicantsQuery);
+            totalApplicantsCount = allApplicantsSnapshot.docs.length;
+
+            // Fetch only pending applications
+            const pendingApplicantsQuery = query(
+                collection(db, 'Applications'),
+                where('eventName', 'in', eventNames),
+                where('status', '==', 'Pending')
+            );
+            const pendingApplicantsSnapshot = await getDocs(pendingApplicantsQuery);
+            pendingApplicantsCount = pendingApplicantsSnapshot.docs.length;
+        }
+
+        // Calculate basic analytics
+        const totalPosts = allPosts.length;
+        const myTotalPosts = myPosts.length;
+        const mostViewedPost = allPosts.reduce((max, post) => (post.views > (max?.views || 0) ? post : max), null);
+        const totalViews = allPosts.reduce((sum, post) => sum + (post.views || 0), 0);
+        const averageViews = totalPosts > 0 ? Math.round(totalViews / totalPosts) : 0;
+
+        setStats({
+            posts: totalPosts,
+            myPosts: myTotalPosts,
+            topViewedPost: mostViewedPost,
+            averageViews: averageViews,
+            applicants: totalApplicantsCount, // Shows total number of applicants
+            pending: pendingApplicantsCount  // Shows only pending applications
+        });
+
     } catch (error) {
-      console.error('❌ Error fetching analytics data:', error);
+        console.error('❌ Error fetching analytics data:', error);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
+
+
   
   const menuItems = [
     {

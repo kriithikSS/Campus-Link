@@ -1,68 +1,50 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUser } from "@clerk/clerk-expo";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../config/FirebaseConfig";
 
 // Create context
 export const AuthContext = createContext(null);
 
-// Admin emails from env
-const ADMIN_EMAILS = process.env.EXPO_PUBLIC_ADMIN_EMAILS?.split(",") || [];
-
 export const AuthProvider = ({ children }) => {
-  const { isLoaded: userIsLoaded, isSignedIn, user } = useUser();
+  const { isLoaded: userIsLoaded, isSignedIn, user } = useUser(); // Get Clerk user
   const [isAdmin, setIsAdmin] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize admin status on app start or when user changes
   useEffect(() => {
-    const initializeAuthState = async () => {
+    const checkAdminStatus = async () => {
       try {
         setIsLoading(true);
-        
-        // First check if user is signed in through Clerk
-        if (!userIsLoaded) {
-          return; // Wait for Clerk to load
-        }
-        
-        if (!isSignedIn) {
+
+        if (!userIsLoaded || !isSignedIn || !user?.id) {
           setIsAdmin(false);
           setIsInitialized(true);
           return;
         }
-        
-        // Next read from AsyncStorage
-        const storedAdminStatus = await AsyncStorage.getItem("isAdmin");
-        console.log("🔵 AsyncStorage isAdmin value:", storedAdminStatus);
-        
-        // If we have stored admin state, use it initially
-        if (storedAdminStatus === "true") {
-          setIsAdmin(true);
+
+        // Get the user's Clerk ID
+        const userId = user.id;
+
+        // Fetch user role from Firestore
+        const userDoc = await getDoc(doc(db, "users", userId));
+
+        if (userDoc.exists()) {
+          setIsAdmin(userDoc.data().role === "admin");
+        } else {
+          setIsAdmin(false);
         }
-        
-        // Now verify against user email to keep admin status updated
-        if (user?.primaryEmailAddress) {
-          const userEmail = user.primaryEmailAddress.emailAddress.toLowerCase().trim();
-          const userIsAdmin = ADMIN_EMAILS.includes(userEmail);
-          
-          // Save to state and storage
-          setIsAdmin(userIsAdmin);
-          await AsyncStorage.setItem("isAdmin", userIsAdmin ? "true" : "false");
-          
-          console.log(`👤 User (${userEmail}) admin status: ${userIsAdmin}`);
-        }
-        
+
         setIsInitialized(true);
       } catch (error) {
-        console.error("❌ Error initializing auth state:", error);
-        // Default to non-admin in case of errors
+        console.error("❌ Error checking admin status:", error);
         setIsAdmin(false);
       } finally {
         setIsLoading(false);
       }
     };
 
-    initializeAuthState();
+    checkAdminStatus();
   }, [userIsLoaded, isSignedIn, user]);
 
   // Value object to be provided to consumers

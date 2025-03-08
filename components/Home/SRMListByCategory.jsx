@@ -1,10 +1,11 @@
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native'
-import React, { useEffect, useState } from 'react'
-import Category from './Category'
-import { collection, getDocs, query, where } from 'firebase/firestore'
-import {db} from '../../config/FirebaseConfig'
-import SRMListItem from './SRMListItem'
-import Colors from '../../constants/Colors'
+// In SRMListByCategory.jsx
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import Category from './Category';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../../config/FirebaseConfig';
+import SRMListItem from './SRMListItem';
+import Colors from '../../constants/Colors';
 
 export default function SRMListByCategory() {
   const [SRMList, setSRMList] = useState([]);
@@ -12,8 +13,8 @@ export default function SRMListByCategory() {
   const [selectedCategory, setSelectedCategory] = useState('Clubs');
   
   useEffect(() => {
-    GetSRMList('Clubs')
-  }, [])
+    GetSRMList('Clubs');
+  }, []);
   
   const GetSRMList = async (category) => {
     setLoader(true);
@@ -24,7 +25,7 @@ export default function SRMListByCategory() {
     const querySnapshot = await getDocs(q);
   
     const fetchedList = querySnapshot.docs.map(doc => ({
-      id: doc.id,  // Include Firestore document ID
+      id: doc.id,
       ...doc.data()
     }));
   
@@ -34,7 +35,11 @@ export default function SRMListByCategory() {
   
   return (
     <View style={styles.container}>
-      <Category category={(value) => GetSRMList(value)} selectedCategory={selectedCategory} />
+      {/* Category component at the top - non-scrollable */}
+      <Category 
+        category={(value) => GetSRMList(value)} 
+        selectedCategory={selectedCategory}
+      />
       
       {loader ? (
         <View style={styles.loaderContainer}>
@@ -47,6 +52,7 @@ export default function SRMListByCategory() {
           numColumns={2}
           columnWrapperStyle={styles.row}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={true} // Enable FlatList scrolling since it's no longer in a ScrollView
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <SRMListItem SRM={item} />
@@ -62,7 +68,7 @@ export default function SRMListByCategory() {
         />
       )}
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -78,9 +84,9 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   loaderContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 30,
   },
   loadingText: {
     marginTop: 10,
@@ -88,7 +94,6 @@ const styles = StyleSheet.create({
     color: Colors.GRAY,
   },
   emptyContainer: {
-    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,

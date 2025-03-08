@@ -138,29 +138,38 @@ export default function UserManagement() {
             }
     
             const eventData = eventSnap.data();
+            const eventName = eventData.name; // Get event name
             const imageUrl = eventData.imageUrl;
     
-            // Extract the image path from the URL
+            // Extract the image path from the URL and delete image
             if (imageUrl) {
                 const imagePath = decodeURIComponent(imageUrl.split('/o/')[1].split('?')[0]);
                 const imageRef = ref(storage, imagePath);
-    
-                // Delete the image from Firebase Storage
                 await deleteObject(imageRef);
             }
+    
+            // Delete all applications linked to this event
+            const applicationsQuery = query(collection(db, "Applications"), where("eventName", "==", eventName));
+            const applicationsSnapshot = await getDocs(applicationsQuery);
+    
+            const deleteApplicationPromises = applicationsSnapshot.docs.map(appDoc => deleteDoc(appDoc.ref));
+            await Promise.all(deleteApplicationPromises);
+    
+            console.log(`✅ Deleted ${applicationsSnapshot.docs.length} applications for event: ${eventName}`);
     
             // Now delete the event from Firestore
             await deleteDoc(eventDoc);
             setEvents((prevEvents) => prevEvents.filter(event => event.id !== confirmDelete));
-            showToast("Event and image deleted successfully");
+            showToast("Event and related applications deleted successfully!");
     
         } catch (error) {
-            console.error("Error deleting event and image:", error);
+            console.error("❌ Error deleting event and applications:", error);
             showToast("Failed to delete event", true);
         }
     
         setConfirmDelete(null);
     };
+    
 
     const handleEdit = (event) => {
         setSelectedEvent(event);
