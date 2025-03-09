@@ -4,9 +4,10 @@ import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/FirebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
+import SRMListItem from '../../components/Home/SRMListItem';
 
 export default function SearchScreen() {
-    const router = useRouter();  // ✅ Using router for navigation
+    const router = useRouter();
     const [searchText, setSearchText] = useState('');
     const [posts, setPosts] = useState([]);
     const [filteredPosts, setFilteredPosts] = useState([]);
@@ -55,17 +56,16 @@ export default function SearchScreen() {
             </View>
 
             <FlatList
+                key="grid-view"  // Add a key prop to force re-render when numColumns changes
                 data={filteredPosts}
+                numColumns={2}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.postContainer}
-                        onPress={() => router.push(`/SRM-details?name=${encodeURIComponent(item.name)}&imageUrl=${encodeURIComponent(item.imageUrl)}&category=${encodeURIComponent(item.category)}`)}
-                    >
-                        <Image source={{ uri: item.imageUrl }} style={styles.postImage} />
-                        <Text style={styles.postTitle}>{item.name}</Text>
-                    </TouchableOpacity>
+                    <View style={{ flex: 1, margin: 10 }}>
+                        <SRMListItem SRM={item} />
+                    </View>
                 )}
+                contentContainerStyle={{ paddingHorizontal: 10 }}
             />
         </SafeAreaView>
     );
@@ -95,25 +95,5 @@ const styles = StyleSheet.create({
     },
     clearIcon: {
         marginLeft: 8,
-    },
-    postContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        padding: 10,
-        borderRadius: 10,
-        marginHorizontal: 10,
-        marginBottom: 10,
-        elevation: 2,
-    },
-    postImage: {
-        width: 50,
-        height: 50,
-        borderRadius: 10,
-        marginRight: 10,
-    },
-    postTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-    },
+    }
 });
