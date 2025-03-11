@@ -5,8 +5,13 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../config/FirebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import SRMListItem from '../../components/Home/SRMListItem';
+import { useTheme } from '../../context/ThemeContext';
+
 
 export default function SearchScreen() {
+    const theme = useTheme();
+    const colors = theme?.colors || {};  // Ensures colors is defined
+    const isDarkMode = theme?.isDarkMode || false;
     const router = useRouter();
     const [searchText, setSearchText] = useState('');
     const [posts, setPosts] = useState([]);
@@ -37,20 +42,21 @@ export default function SearchScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.safeContainer}>
-            <StatusBar barStyle="dark-content" backgroundColor="#f8f8f8" />
+        <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
+            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.background} />
 
-            <View style={styles.searchContainer}>
-                <Ionicons name="search-outline" size={20} color="#999" style={styles.icon} />
+            <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
+            <Ionicons name="search-outline" size={20} color={colors.icon} style={styles.icon} />
                 <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search by name..."
-                    value={searchText}
-                    onChangeText={handleSearch}
-                />
+    style={[styles.searchInput, { color: colors.text }]}
+    placeholder="Search by name..."
+    placeholderTextColor={colors.text} // Ensures placeholder adapts to dark mode
+    value={searchText}
+    onChangeText={handleSearch}
+/>
                 {searchText.length > 0 && (
                     <TouchableOpacity onPress={() => handleSearch('')}>
-                        <Ionicons name="close-circle" size={20} color="gray" style={styles.clearIcon} />
+                        <Ionicons name="close-circle" size={20} color={colors.icon} style={styles.clearIcon} />
                     </TouchableOpacity>
                 )}
             </View>
@@ -74,18 +80,18 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
     safeContainer: {
         flex: 1,
-        backgroundColor: '#f8f8f8',
         paddingTop: 25,
     },
+    
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#ffffff',
         padding: 10,
         borderRadius: 10,
         margin: 10,
         elevation: 3,
     },
+    
     icon: {
         marginRight: 8,
     },

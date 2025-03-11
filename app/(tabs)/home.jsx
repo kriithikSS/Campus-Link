@@ -7,8 +7,10 @@ import Colors from '../../constants/Colors';
 import SRMListItem from '../../components/Home/SRMListItem';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../config/FirebaseConfig';
+import { useTheme } from '../../context/ThemeContext';
 
-const CategorySelector = ({ categories, selectedCategory, onSelectCategory }) => {
+const CategorySelector = ({ categories, selectedCategory, onSelectCategory, colors }) => {
+
   return (
     <View style={styles.categoryContainer}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -17,15 +19,23 @@ const CategorySelector = ({ categories, selectedCategory, onSelectCategory }) =>
             key={category}
             style={[
               styles.categoryItem,
-              selectedCategory === category && styles.selectedCategoryItem
+              { backgroundColor: colors.card, borderColor: colors.border }, 
+              selectedCategory === category && { backgroundColor: '#FFD700', borderColor: '#FFD700' }
             ]}
+            
+            
+            
             onPress={() => onSelectCategory(category)}
           >
             <Text
               style={[
                 styles.categoryText,
-                selectedCategory === category && styles.selectedCategoryText
+                { color: colors.text }, 
+                selectedCategory === category && { color: 'black' } // ✅ Change to black for readability
               ]}
+              
+              
+              
             >
               {category}
             </Text>
@@ -37,6 +47,8 @@ const CategorySelector = ({ categories, selectedCategory, onSelectCategory }) =>
 };
 
 export default function HomeScreen() {
+
+  const { colors, isDarkMode } = useTheme();
   const [SRMList, setSRMList] = useState([]);
   const [loader, setLoader] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Clubs');
@@ -70,9 +82,11 @@ export default function HomeScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor={Colors.WHITE} />
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+    <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.background} />
+
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+
         <Header />
         <FlatList
           data={SRMList}
@@ -87,9 +101,11 @@ export default function HomeScreen() {
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onSelectCategory={handleCategoryChange}
+                colors={colors} // 🔥 Pass colors as a prop
               />
+
               <View style={styles.currentCategoryContainer}>
-                <Text style={styles.currentCategory}>
+              <Text style={[styles.currentCategory, { color: colors.text }]}>
                   {selectedCategory} ({SRMList.length})
                 </Text>
               </View>
@@ -98,7 +114,8 @@ export default function HomeScreen() {
           ListEmptyComponent={
             !loader && (
               <View style={styles.emptyContainer}>
-                <Text style={styles.emptyText}>No items found in {selectedCategory}</Text>
+                <Text style={[styles.emptyText, { color: colors.text }]}>No items found in {selectedCategory}</Text>
+
               </View>
             )
           }
@@ -110,7 +127,8 @@ export default function HomeScreen() {
             loader && (
               <View style={styles.loaderContainer}>
                 <ActivityIndicator size="large" color={Colors.PRIMARY} />
-                <Text style={styles.loadingText}>Loading {selectedCategory}...</Text>
+                <Text style={[styles.loadingText, { color: colors.text }]}>Loading {selectedCategory}...</Text>
+
               </View>
             )
           }
@@ -170,8 +188,8 @@ const styles = StyleSheet.create({
   currentCategory: {
     fontFamily: 'outfit-med',
     fontSize: 18,
-    color: Colors.BLACK,
   },
+  
   loaderContainer: {
     justifyContent: 'center',
     alignItems: 'center',

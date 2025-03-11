@@ -6,9 +6,11 @@ import { useUser } from '@clerk/clerk-expo'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 import { db } from '../../config/FirebaseConfig'
 import SRMListItem from './../../components/Home/SRMListItem'
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Favorite() {
 
+  const { colors, isDarkMode } = useTheme();
   const { user } = useUser();
   const [FavSRMList, setFavSRMList] = useState([]);
   const [loader, setLoader] = useState(false);
@@ -60,17 +62,23 @@ export default function Favorite() {
   );
 
   return (
-    <View style={{ padding: 20, marginTop: 20 }}>
-      <Text style={{ fontFamily: 'outfit-med', fontSize: 30 }}>Favourites</Text>
+    <View style={{ padding: 20, marginTop: 20, backgroundColor: colors.background, flex: 1 }}>
+
+      <Text style={{ fontFamily: 'outfit-med', fontSize: 30, color: colors.text }}>
+  Favourites
+      </Text>
+
 
       {FavSRMList.length === 0 && !loader ? (
-        <Text style={{ textAlign: 'center', marginTop: 20 }}>
-          No favourites to display.
-        </Text>
+        <Text style={{ textAlign: 'center', marginTop: 20, color: colors.text }}>
+        No favourites to display.
+      </Text>
+      
       ) : (
         <FlatList
           data={FavSRMList}
           numColumns={2}
+          contentContainerStyle={{ paddingHorizontal:0, backgroundColor: colors.background }}
           renderItem={({ item }) => (
             <View style={{ flex:1, margin:10 }}>
               <SRMListItem SRM={item} />

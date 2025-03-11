@@ -1,9 +1,10 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import { ClerkProvider, ClerkLoaded, useAuth as useClerkAuth } from '@clerk/clerk-expo';
-import { AuthProvider } from '../context/AuthContext'; // Import our new AuthProvider
+import { AuthProvider } from '../context/AuthContext';
+import { ThemeProvider } from '../context/ThemeContext';
 
 const tokenCache = {
   async getToken(key) {
@@ -48,9 +49,9 @@ function AuthWrapper({ children }) {
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
-    'outfit-reg':require('./../assets/fonts/Outfit-Regular.ttf'),
-    'outfit-med':require('./../assets/fonts/Outfit-Medium.ttf'),
-    'outfit-bold':require('./../assets/fonts/Outfit-Bold.ttf'),
+    'outfit-reg': require('./../assets/fonts/Outfit-Regular.ttf'),
+    'outfit-med': require('./../assets/fonts/Outfit-Medium.ttf'),
+    'outfit-bold': require('./../assets/fonts/Outfit-Bold.ttf'),
     'Roboto-reg': require('./../assets/fonts/Roboto-Regular.ttf'),
     'Roboto-med': require('./../assets/fonts/Roboto-Medium.ttf'),
     'Roboto-bold': require('./../assets/fonts/Roboto-Bold.ttf'),
@@ -66,15 +67,17 @@ export default function RootLayout() {
     <ClerkProvider tokenCache={tokenCache} publishableKey={publishableKey}>
       <ClerkLoaded>
         <AuthWrapper>
-          <AuthProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="login/index" options={{ headerShown: false }} />
-              <Stack.Screen name="redirect-handler" options={{ headerShown: false }} />
-              <Stack.Screen name="admin" options={{ headerShown: false }} />
-            </Stack>
-          </AuthProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                <Stack.Screen name="login/index" options={{ headerShown: false }} />
+                <Stack.Screen name="redirect-handler" options={{ headerShown: false }} />
+                <Stack.Screen name="admin" options={{ headerShown: false }} />
+              </Stack>
+            </AuthProvider>
+          </ThemeProvider>
         </AuthWrapper>
       </ClerkLoaded>
     </ClerkProvider>

@@ -10,8 +10,11 @@ import SRMsubinfo from '../../components/SRMdetails/SRMsubinfo';
 import About from '../../components/SRMdetails/About';
 import Ownerinfo from '../../components/SRMdetails/Ownerinfo';
 import Colors from '../../constants/Colors';
+import { useTheme } from '../../context/ThemeContext';
+
 
 export default function SRMdetails() {
+  const { colors, isDarkMode } = useTheme();
   const SRM = useLocalSearchParams();  // 🔥 Get SRM details
   const navigation = useNavigation();
   const { user } = useUser(); // 🔥 Get logged-in user info
@@ -137,7 +140,8 @@ export default function SRMdetails() {
   };
 
   return (
-    <View>
+    <View style={{ backgroundColor: colors.background, flex: 1 }}>
+
       <ScrollView>
         {/* SRM Info */}
         <SRMinfo SRM={SRM}/>

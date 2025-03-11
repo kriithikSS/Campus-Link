@@ -1,42 +1,44 @@
-import { View, Text, StyleSheet } from 'react-native'
-import React from 'react'
+import { View, Text, StyleSheet, Image } from 'react-native';
+import React from 'react';
 import { useUser } from '@clerk/clerk-react';
-import { Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../context/ThemeContext';
 
 export default function Header() {
-    const {user} = useUser();
-    
-    return (
-      <View style={styles.container}>
-        <View style={styles.contentContainer}>
-          <View>
-            <Text style={styles.welcomeText}>Welcome</Text>
-            <Text 
-              numberOfLines={1}
-              ellipsizeMode="tail"
-              style={styles.nameText}
-            >
-              {user?.fullName}
-            </Text>
-          </View>
-          
-          <View style={styles.imageWrapper}>
-            <LinearGradient
-              colors={['#4776E6', '#8E54E9']}
-              style={styles.gradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Image 
-                source={{uri:user?.imageUrl}} 
-                style={styles.profileImage}
-              />
-            </LinearGradient>
-          </View>
+  const { user } = useUser();
+  const { colors, isDarkMode } = useTheme();
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.contentContainer}>
+        <View>
+        <Text style={[styles.welcomeText, { color: colors.text }]}>Welcome</Text>
+
+          <Text 
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            style={[styles.nameText, { color: colors.text }]}
+          >
+            {user?.fullName}
+          </Text>
+        </View>
+        
+        <View style={styles.imageWrapper}>
+          <LinearGradient
+            colors={isDarkMode ? ['#222', '#444'] : ['#4776E6', '#8E54E9']} // Change gradient in dark mode
+            style={styles.gradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Image 
+              source={{ uri: user?.imageUrl }} 
+              style={styles.profileImage}
+            />
+          </LinearGradient>
         </View>
       </View>
-    )
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -52,13 +54,11 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontFamily: 'outfit-reg',
     fontSize: 16,
-    color: '#94A3B8',
     marginBottom: 4,
   },
   nameText: {
     fontFamily: 'outfit-med',
     fontSize: 24,
-    color: '#1E293B',
     maxWidth: '90%',
   },
   imageWrapper: {
