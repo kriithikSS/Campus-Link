@@ -1,6 +1,5 @@
 import { View, Text, FlatList, RefreshControl } from 'react-native'
 import React, { useEffect, useState, useCallback } from 'react'
-import { useFocusEffect } from '@react-navigation/native'
 import Shared from '../../Shared/Shared'
 import { useUser } from '@clerk/clerk-expo'
 import { collection, getDocs, query, where } from 'firebase/firestore'
@@ -53,13 +52,12 @@ export default function Favorite() {
   };
 
   // Refresh when the tab is focused
-  useFocusEffect(
-    useCallback(() => {
-      if (user) {
-        GetFavSRMList();
-      }
-    }, [user])
-  );
+  useEffect(() => {
+    if (user) {
+      GetFavSRMList();
+    }
+  }, [user]);
+  
 
   return (
     <View style={{ padding: 20, marginTop: 20, backgroundColor: colors.background, flex: 1 }}>

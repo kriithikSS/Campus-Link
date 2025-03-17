@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, Image, Linking, Animated } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router';
 import Colors from '../../constants/Colors';
 
 export default function HelpSupport() {
-    const navigation = useNavigation();
+    const router = useRouter(); 
     const [expandedFAQ, setExpandedFAQ] = useState(null);
     const [fadeAnim] = useState(new Animated.Value(0));
 

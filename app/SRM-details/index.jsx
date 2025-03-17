@@ -1,6 +1,7 @@
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import React, { useEffect, useState } from 'react'
-import { useLocalSearchParams, useNavigation } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
+import { useRouter } from 'expo-router';
 import { doc, updateDoc, increment, setDoc, getDoc } from "firebase/firestore"; // 🔥 Import Firestore
 import { db } from '../../config/FirebaseConfig';
 import { useUser } from "@clerk/clerk-expo"; // 🔥 Import Clerk for authentication
@@ -16,16 +17,11 @@ import { useTheme } from '../../context/ThemeContext';
 export default function SRMdetails() {
   const { colors, isDarkMode } = useTheme();
   const SRM = useLocalSearchParams();  // 🔥 Get SRM details
-  const navigation = useNavigation();
+  const router = useRouter(); 
   const { user } = useUser(); // 🔥 Get logged-in user info
   const [isApplied, setIsApplied] = useState(false); // 🔥 Check if user has applied
 
   useEffect(() => {
-    navigation.setOptions({
-      headerTransparent: true,
-      headerTitle: ''
-    });
-
     if (SRM.id) {
       incrementViews(SRM.id);  // 🔥 Increment views when the post is opened
     }
@@ -33,7 +29,8 @@ export default function SRMdetails() {
     if (user) {
       checkIfApplied(); // 🔥 Check if the user has already applied
     }
-  }, [user]);
+}, [user]);
+
 
   // 🔥 Function to increment views in Firestore
   const incrementViews = async (postId) => {
