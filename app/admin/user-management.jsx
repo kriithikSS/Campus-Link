@@ -92,18 +92,21 @@ export default function UserManagement() {
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
-            aspect: [4, 3],
+            aspect: [16, 9], // Modified to enforce 16:9 aspect ratio
             quality: 1,
         });
 
         if (!result.canceled) {
             setImage(result.assets[0].uri);
+            // Set a flag to indicate the image was changed
+            setUpdatedData(prev => ({...prev, imageChanged: true}));
         }
     };
 
     const UploadImage = async () => {
+        // If no image is selected or image hasn't changed, return the existing URL
         if (!image) return updatedData.imageUrl;
-        if (image === updatedData.imageUrl) return image;
+        if (!updatedData.imageChanged && image === updatedData.imageUrl) return image;
 
         try {
             const resp = await fetch(image);
@@ -170,10 +173,17 @@ export default function UserManagement() {
         setConfirmDelete(null);
     };
     
-
     const handleEdit = (event) => {
+        // Make sure to properly set all available fields from the event
         setSelectedEvent(event);
-        setUpdatedData({...event});
+        
+        // Create a complete copy of the event data, including all fields
+        const eventDataCopy = {...event};
+        
+        // Log the data to help with debugging
+        console.log("Event data being edited:", eventDataCopy);
+        
+        setUpdatedData(eventDataCopy);
         setImage(event.imageUrl);
         setModalVisible(true);
     };
@@ -181,7 +191,8 @@ export default function UserManagement() {
     const handleUpdate = async () => {
         if (!selectedEvent) return;
 
-        const requiredFields = ['name', 'category', 'instaId', 'date', 'email', 'about'];
+        // Update the required fields list - make email mandatory and date optional
+        const requiredFields = ['name', 'category', 'email', 'about'];
         const missingFields = requiredFields.filter(field => !updatedData[field] || updatedData[field].trim() === '');
 
         if (missingFields.length > 0) {
@@ -198,12 +209,16 @@ export default function UserManagement() {
                 return;
             }
 
+            // Make sure to include all fields in the updated data
             const updatedEventData = { 
                 ...updatedData, 
                 imageUrl,
                 adminEmail: user.primaryEmailAddress.emailAddress,
                 lastUpdated: new Date().toISOString()
             };
+
+            // Remove the temporary imageChanged flag
+            delete updatedEventData.imageChanged;
 
             const eventRef = doc(db, "Works", selectedEvent.id);
             await updateDoc(eventRef, updatedEventData);
@@ -248,14 +263,37 @@ export default function UserManagement() {
                 />
                 <View style={styles.eventDetails}>
                     <Text style={styles.eventTitle} numberOfLines={2}>{item.name}</Text>
-                    <View style={styles.infoRow}>
-                        <Ionicons name="calendar-outline" size={14} color={Colors.PRIMARY} />
-                        <Text style={styles.infoText}>{item.date}</Text>
-                    </View>
+                    
+                    {/* Display date info if available */}
+                    {item.date && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name="calendar-outline" size={14} color={Colors.PRIMARY} />
+                            <Text style={styles.infoText}>{item.date}</Text>
+                        </View>
+                    )}
+                    
+                    {/* Display category info */}
                     <View style={styles.infoRow}>
                         <Ionicons name="pricetag-outline" size={14} color={Colors.PRIMARY} /> 
                         <Text style={styles.infoText}>{item.category}</Text>
                     </View>
+                    
+                    {/* Display Instagram ID if available */}
+                    {item.instaId && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name="logo-instagram" size={14} color={Colors.PRIMARY} />
+                            <Text style={styles.infoText}>{item.instaId}</Text>
+                        </View>
+                    )}
+                    
+                    {/* Display Email if available */}
+                    {item.email && (
+                        <View style={styles.infoRow}>
+                            <Ionicons name="mail-outline" size={14} color={Colors.PRIMARY} />
+                            <Text style={styles.infoText} numberOfLines={1}>{item.email}</Text>
+                        </View>
+                    )}
+                    
                     <View style={styles.actionButtons}>
                         <TouchableOpacity 
                             style={styles.editButton} 
@@ -392,7 +430,7 @@ export default function UserManagement() {
                                     <Ionicons name="text-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
-                                        value={updatedData.name}
+                                        value={updatedData.name || ''}
                                         onChangeText={(value) => setUpdatedData(prev => ({...prev, name: value}))}
                                         placeholder="Enter event name"
                                     />
@@ -407,7 +445,7 @@ export default function UserManagement() {
                                 <View style={styles.pickerWrapper}>
                                     <Ionicons name="pricetag-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
                                     <Picker
-                                        selectedValue={updatedData.category}
+                                        selectedValue={updatedData.category || ''}
                                         onValueChange={(itemValue) => setUpdatedData(prev => ({...prev, category: itemValue}))}
                                         style={styles.picker}
                                     >
@@ -419,26 +457,26 @@ export default function UserManagement() {
                                 </View>
                             </View>
 
-                            {/* Instagram ID */}
+                            {/* Instagram ID - Optional */}
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>
-                                    Instagram ID <Text style={styles.requiredStar}>*</Text>
+                                    Instagram ID
                                 </Text>
                                 <View style={styles.inputWrapper}>
                                     <Ionicons name="logo-instagram" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
-                                        value={updatedData.instaId}
+                                        value={updatedData.instaId || ''}
                                         onChangeText={(value) => setUpdatedData(prev => ({...prev, instaId: value}))}
-                                        placeholder="Enter Instagram ID"
+                                        placeholder="Enter Instagram ID (optional)"
                                     />
                                 </View>
                             </View>
 
-                            {/* Date */}
+                            {/* Date - Now Optional */}
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>
-                                    Date <Text style={styles.requiredStar}>*</Text>
+                                    Date
                                 </Text>
                                 <TouchableOpacity 
                                     style={styles.inputWrapper}
@@ -446,7 +484,7 @@ export default function UserManagement() {
                                 >
                                     <Ionicons name="calendar-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
                                     <Text style={styles.dateInput}>
-                                        {updatedData.date || "Select date"}
+                                        {updatedData.date || "Select date (optional)"}
                                     </Text>
                                 </TouchableOpacity>
                                 {showDatePicker && (
@@ -459,7 +497,7 @@ export default function UserManagement() {
                                 )}
                             </View>
 
-                            {/* Email */}
+                            {/* Email - Now Mandatory */}
                             <View style={styles.inputContainer}>
                                 <Text style={styles.label}>
                                     Contact Email <Text style={styles.requiredStar}>*</Text>
@@ -468,10 +506,26 @@ export default function UserManagement() {
                                     <Ionicons name="mail-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
                                     <TextInput
                                         style={styles.input}
-                                        value={updatedData.email}
+                                        value={updatedData.email || ''}
                                         onChangeText={(value) => setUpdatedData(prev => ({...prev, email: value}))}
                                         placeholder="Enter contact email"
                                         keyboardType="email-address"
+                                    />
+                                </View>
+                            </View>
+
+                            {/* Google Form Link */}
+                            <View style={styles.inputContainer}>
+                                <Text style={styles.label}>
+                                    Google Form Link
+                                </Text>
+                                <View style={styles.inputWrapper}>
+                                    <Ionicons name="link-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
+                                    <TextInput
+                                        style={styles.input}
+                                        value={updatedData.googleFormUrl || ''}
+                                        onChangeText={(value) => setUpdatedData(prev => ({...prev, googleFormUrl: value}))}
+                                        placeholder="Enter Google Form URL (optional)"
                                     />
                                 </View>
                             </View>
@@ -487,7 +541,7 @@ export default function UserManagement() {
                                         style={[styles.input, styles.textArea]}
                                         multiline
                                         numberOfLines={5}
-                                        value={updatedData.about}
+                                        value={updatedData.about || ''}
                                         onChangeText={(value) => setUpdatedData(prev => ({...prev, about: value}))}
                                         placeholder="Enter description about the event"
                                         textAlignVertical="top"
@@ -749,7 +803,7 @@ const styles = StyleSheet.create({
     },
     imagePicker: {
         width: 200,
-        height: 150,
+        height: 112.5, // 16:9 aspect ratio (200 * 9/16)
         borderRadius: 15
     },
     imageOverlay: {
@@ -764,7 +818,7 @@ const styles = StyleSheet.create({
     },
     imagePickerPlaceholder: {
         width: 200,
-        height: 150,
+        height: 112.5, // 16:9 aspect ratio (200 * 9/16)
         borderRadius: 15,
         borderWidth: 2,
         borderColor: '#ddd',

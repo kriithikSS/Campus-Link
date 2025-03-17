@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, StyleSheet, Platform, Alert, ToastAndroid, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
+import { useRouter } from 'expo-router'; // ✅ Correct for expo-router
 import { Picker } from '@react-native-picker/picker';
 import Colors from '../../constants/Colors';
 import { db, storage } from '../../config/FirebaseConfig';
@@ -13,7 +13,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function AddNew() {
-    const navigation = useNavigation();
+    const router = useRouter(); // ✅ Use router instead of navigation
     const { user } = useUser();
     const [formData, setFormData] = useState({ 
         formUrl: '',
@@ -28,16 +28,6 @@ export default function AddNew() {
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
-        navigation.setOptions({
-            headerTitle: 'Create New Event',
-            headerStyle: {
-                backgroundColor: Colors.PRIMARY,
-            },
-            headerTintColor: '#fff',
-            headerTitleStyle: {
-                fontFamily: 'outfit-med',
-            },
-        });
         fetchCategories();
     }, []);
 
@@ -249,7 +239,8 @@ export default function AddNew() {
             setDate(new Date());
             
             // Navigate back or to events list
-            navigation.goBack();
+            router.back(); // ✅ Works correctly in expo-router
+
         } catch (error) {
             console.error('Failed to add event:', error);
             showToast('Failed to add event. Please try again.');
