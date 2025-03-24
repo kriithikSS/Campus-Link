@@ -147,8 +147,7 @@ export default function SRMdetails() {
         {/* About */}
         <About SRM={SRM}/>
         {/* Owner Details */}
-        <Ownerinfo SRM={SRM}/>
-
+       
         <View style={{height:70}} />
       </ScrollView>
 

@@ -1,4 +1,4 @@
-import { View, TextInput, FlatList, Text, Image, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar } from 'react-native';
+import { View, TextInput, FlatList, SafeAreaView, StatusBar, StyleSheet, TouchableOpacity } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
@@ -6,7 +6,6 @@ import { db } from '../../config/FirebaseConfig';
 import { Ionicons } from '@expo/vector-icons';
 import SRMListItem from '../../components/Home/SRMListItem';
 import { useTheme } from '../../context/ThemeContext';
-
 
 export default function SearchScreen() {
     const theme = useTheme();
@@ -45,24 +44,27 @@ export default function SearchScreen() {
         <SafeAreaView style={[styles.safeContainer, { backgroundColor: colors.background }]}>
             <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={colors.background} />
 
+            {/* Search Bar Container */}
             <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
-            <Ionicons name="search-outline" size={20} color={colors.icon} style={styles.icon} />
+                <Ionicons name="search-outline" size={22} color={colors.icon} style={styles.icon} />
                 <TextInput
-    style={[styles.searchInput, { color: colors.text }]}
-    placeholder="Search by name..."
-    placeholderTextColor={colors.text} // Ensures placeholder adapts to dark mode
-    value={searchText}
-    onChangeText={handleSearch}
-/>
+                    style={[styles.searchInput, { color: colors.text }]}
+                    placeholder="Search by name..."
+                    placeholderTextColor={colors.text} // Ensures placeholder adapts to dark mode
+                    value={searchText}
+                    onChangeText={handleSearch}
+                />
                 {searchText.length > 0 && (
-                    <TouchableOpacity onPress={() => handleSearch('')}>
-                        <Ionicons name="close-circle" size={20} color={colors.icon} style={styles.clearIcon} />
-                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleSearch('')} style={styles.clearButton}>
+                    <Ionicons name="close-circle" size={26} color={colors.icon} />
+                </TouchableOpacity>
+                
                 )}
             </View>
 
+            {/* List of Search Results */}
             <FlatList
-                key="grid-view"  // Add a key prop to force re-render when numColumns changes
+                key="grid-view"
                 data={filteredPosts}
                 numColumns={2}
                 keyExtractor={(item) => item.id}
@@ -82,24 +84,31 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingTop: 25,
     },
-    
     searchContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 10,
-        borderRadius: 10,
-        margin: 10,
+        justifyContent: 'space-between',  // Ensures even spacing
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 12,
+        marginHorizontal: 15,
+        marginBottom: 10,
         elevation: 3,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
-    
     icon: {
         marginRight: 8,
     },
     searchInput: {
         flex: 1,
         fontSize: 16,
+        paddingVertical: 8,
     },
-    clearIcon: {
-        marginLeft: 8,
+    clearButton: {
+        padding: 10,  // Bigger touch area
+        borderRadius: 50,// Makes it circular  // Gives some space around clear button
     }
 });

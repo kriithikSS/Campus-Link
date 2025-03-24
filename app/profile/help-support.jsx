@@ -5,6 +5,7 @@ import Colors from '../../constants/Colors';
 
 export default function HelpSupport() {
     const router = useRouter(); 
+
     const [expandedFAQ, setExpandedFAQ] = useState(null);
     const [fadeAnim] = useState(new Animated.Value(0));
 
