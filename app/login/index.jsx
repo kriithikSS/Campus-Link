@@ -51,21 +51,35 @@ export default function LoginScreen() {
   }, []);
 
   useEffect(() => {
-    const checkAdminAndRedirect = async () => {
+    const checkRoleAndRedirect = async () => {
       if (isSignedIn && user?.id) {
         try {
+          console.log("✅ User Signed In:", user.id);
+  
           const userDoc = await getDoc(doc(db, "users", user.id));
-          const isAdmin = userDoc.exists() && userDoc.data().role === "admin";
-
-          router.replace(isAdmin ? "/admin" : "/(tabs)/home");
+          const role = userDoc.exists() ? userDoc.data().role : null;
+  
+          console.log("🔍 Fetched Role from Firestore:", role);
+  
+          let destination;
+          if (role === "admin") {
+            destination = "/admin";  // Admin page
+          } else if (role === "manager") {
+            destination = "/manager";  // Manager page
+          } else {
+            destination = "/(tabs)/home";  // Default home page
+          }
+  
+          console.log(`🚀 Redirecting to ${destination}`);
+          router.replace(destination);
         } catch (error) {
-          console.error("❌ Error checking admin role:", error);
-          router.replace("/(tabs)/home"); // Default to home if error
+          console.error("❌ Error checking user role:", error);
+          router.replace("/(tabs)/home"); // Default to home if error occurs
         }
       }
     };
-
-    checkAdminAndRedirect();
+  
+    checkRoleAndRedirect();
   }, [isSignedIn, user]);
 
   const handlePressIn = () => {

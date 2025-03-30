@@ -1,3 +1,4 @@
+//Add posts
 import { View, Text, TouchableOpacity, TextInput, Image, ScrollView, StyleSheet, Platform, Alert, ToastAndroid, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router'; // ✅ Correct for expo-router
@@ -11,14 +12,19 @@ import { Pressable } from 'react-native';
 import { useUser } from "@clerk/clerk-expo";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
+import Slider from '@react-native-community/slider';
+
 
 export default function AddNew() {
     const router = useRouter(); // ✅ Use router instead of navigation
     const { user } = useUser();
     const [formData, setFormData] = useState({ 
         formUrl: '',
-        Time: new Date().toISOString().split('T')[0] // Default to current date
+        Time: new Date().toISOString().split('T')[0], // Default to current date
+        whatsappNo: '',
+        price: null // Default to free
     });
+    
     const [selectedCategory, setSelectedCategory] = useState('');
     const [categories, setCategories] = useState([]);
     const [image, setImage] = useState();
@@ -26,6 +32,9 @@ export default function AddNew() {
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
+    const [longPressInterval, setLongPressInterval] = useState(null);
+    const [selectedDept, setSelectedDept] = useState('');
+
 
     useEffect(() => {
         fetchCategories();
@@ -73,6 +82,20 @@ export default function AddNew() {
                     delete fieldErrors.category;
                 }
                 break;
+            case 'organizedBy':  // ✅ Add this for Organized By Dept
+                if (!value || value.trim() === '') {
+                    fieldErrors.organizedBy = 'Please select a department';
+                } else {
+                    delete fieldErrors.organizedBy;
+                }
+                break;
+                case 'whatsappNo':
+                    if (!value || value.length !== 10) {
+                        fieldErrors.whatsappNo = 'Please enter a valid 10-digit WhatsApp number';
+                    } else {
+                        delete fieldErrors.whatsappNo;
+                    }
+                    break;
             case 'Mail':
                 if (!value || value.trim() === '') {
                     fieldErrors.Mail = 'Email is required';
@@ -82,37 +105,31 @@ export default function AddNew() {
                     delete fieldErrors.Mail;
                 }
                 break;
-            case 'About':
-                if (!value || value.trim() === '') {
-                    fieldErrors.About = 'Event description is required';
-                } else {
-                    delete fieldErrors.About;
-                }
-                break;
-            case 'formUrl':
-                // Only validate if a value is provided
-                if (value && value.trim() !== '' && !/^https?:\/\//.test(value)) {
-                    fieldErrors.formUrl = 'Please enter a valid URL';
-                } else {
-                    delete fieldErrors.formUrl;
-                }
-                break;
-            case 'Insta':
-                // No validation needed as it's optional
-                delete fieldErrors.Insta;
-                break;
+                case 'price':
+                    if (value === 0) {
+                        fieldErrors.price = 'Price is required. Write 0 if free';
+                    } else if (value < 0) {
+                        fieldErrors.price = 'Price cannot be negative';
+                    } else {
+                        delete fieldErrors.price;
+                    }
+                    break;
+                
+
         }
         
         setErrors(fieldErrors);
     };
+    
 
     const handleInputChange = (fieldName, fieldValue) => {
         setFormData(prev => ({
             ...prev,
-            [fieldName]: fieldValue
+            [fieldName]: fieldName === 'price' ? Math.round(fieldValue) : fieldValue
         }));
         validateField(fieldName, fieldValue);
     };
+    
 
     const onChangeDate = (event, selectedDate) => {
         setShowDatePicker(Platform.OS === 'ios');
@@ -151,8 +168,8 @@ export default function AddNew() {
     };
 
     const validateForm = () => {
-        // Modified to only include required fields
-        const requiredFields = ['name', 'category', 'Mail', 'About'];
+        const requiredFields = ['name', 'category', 'Mail', 'About', 'whatsappNo'];
+
         let formErrors = {};
         let isValid = true;
         
@@ -163,26 +180,22 @@ export default function AddNew() {
             }
         });
         
+        if (!selectedDept) {  
+            formErrors.organizedBy = 'Please select a department';  
+            isValid = false;  
+        }
+        
+        
+        
         if (!image) {
             formErrors.image = 'Please select an event image';
             isValid = false;
         }
-        
-        // Email validation
-        if (formData.Mail && !/^\S+@\S+\.\S+$/.test(formData.Mail)) {
-            formErrors.Mail = 'Please enter a valid email';
-            isValid = false;
-        }
-        
-        // URL validation (only if provided)
-        if (formData.formUrl && formData.formUrl.trim() !== '' && !/^https?:\/\//.test(formData.formUrl)) {
-            formErrors.formUrl = 'Please enter a valid URL';
-            isValid = false;
-        }
-        
+    
         setErrors(formErrors);
         return isValid;
     };
+    
 
     const onSubmit = async () => {
         if (isSubmitting) return;
@@ -223,20 +236,30 @@ export default function AddNew() {
                 views: 0,
                 createdAt: new Date().toISOString(),
                 adminEmail: user.primaryEmailAddress.emailAddress,
-                // Set defaults for optional fields if they're empty
+                organizedBy: selectedDept,
                 Time: formData.Time || new Date().toISOString().split('T')[0],
                 formUrl: formData.formUrl || '',
-                Insta: formData.Insta || ''
+                Insta: formData.Insta || '',
+                whatsappNo: formData.whatsappNo,
+                price: formData.price // Ensure price is stored correctly
             };
+            
+            
     
             await addDoc(collection(db, 'Works'), finalFormData);
             showToast('Event added successfully!');
             
             // Reset form after successful submission
-            setFormData({});
+            setFormData({ 
+                formUrl: '', 
+                Time: new Date().toISOString().split('T')[0] // Reset to current date
+            });
+            
             setImage(null);
             setSelectedCategory('');
             setDate(new Date());
+            setSelectedDept(''); // ✅ Reset department selection after submission
+
             
             // Navigate back or to events list
             router.back(); // ✅ Works correctly in expo-router
@@ -313,6 +336,27 @@ export default function AddNew() {
                     </View>
 
                     <View style={styles.inputContainer}>
+    <Text style={styles.label}>Organized By Dept *</Text>
+    <View style={[styles.pickerContainer, errors.organizedBy && styles.inputError]}>
+        <Picker
+            selectedValue={selectedDept}
+            onValueChange={(itemValue) => {
+                setSelectedDept(itemValue);
+                validateField('organizedBy', itemValue);
+            }}
+            style={styles.picker}
+        >
+            <Picker.Item label="Select Department" value="" />
+            <Picker.Item label="CINTEL" value="CINTEL" />
+            <Picker.Item label="CTECH" value="CTECH" />
+            <Picker.Item label="CORE" value="CORE" />
+        </Picker>
+    </View>
+    {errors.organizedBy && <Text style={styles.errorText}>{errors.organizedBy}</Text>}
+</View>
+
+
+                    <View style={styles.inputContainer}>
                         <Text style={styles.label}>Google Form URL (Optional)</Text>
                         <TextInput
                             style={[styles.input, errors.formUrl && styles.inputError]}
@@ -325,6 +369,32 @@ export default function AddNew() {
                         />
                         {errors.formUrl && <Text style={styles.errorText}>{errors.formUrl}</Text>}
                     </View>
+
+                    <View style={styles.inputContainer}>
+   <Text style={styles.label}>WhatsApp Number *</Text>
+   <TextInput
+       style={[styles.input, errors.whatsappNo && styles.inputError]}
+       placeholder="Enter WhatsApp Number"
+       value={formData.whatsappNo || ''}
+       onChangeText={(value) => handleInputChange('whatsappNo', value)}
+       placeholderTextColor={Colors.GRAY}
+   />
+   {errors.whatsappNo && <Text style={styles.errorText}>{errors.whatsappNo}</Text>}
+</View>
+<View style={styles.inputContainer}>
+    <Text style={styles.label}>Price (Optional)</Text>
+    <TextInput
+        style={styles.input}
+        placeholder="Leave empty if free"
+        keyboardType="numeric"
+        value={formData.price || ''}
+        onChangeText={(value) => {
+            const numericValue = value.replace(/[^0-9]/g, '');
+            handleInputChange('price', numericValue ? parseInt(numericValue) : null);
+        }}
+        placeholderTextColor={Colors.GRAY}
+    />
+</View>
 
                     <View style={styles.inputContainer}>
                         <Text style={styles.label}>Instagram Handle (Optional)</Text>
@@ -413,6 +483,47 @@ export default function AddNew() {
 }
 
 const styles = StyleSheet.create({
+    priceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+    paidEventContainer: {
+        flex: 1,
+        marginLeft: 10,
+    },
+    paidEventLabel: {
+        fontFamily: 'outfit-reg',
+        fontSize: 12,
+        color: '#666',
+        marginBottom: 4,
+    },
+    priceInput: {
+        padding: 12,
+        backgroundColor: Colors.WHITE,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#ddd',
+        fontFamily: 'outfit-reg',
+        fontSize: 16,
+    },
+    disabledPriceInput: {
+        backgroundColor: '#f1f1f1',
+        color: '#999',
+    },
+    hintText: {
+        fontFamily: 'outfit-reg',
+        fontSize: 12,
+        color: Colors.PRIMARY,
+        marginTop: 4,
+    },
+    warningText: {
+        fontFamily: 'outfit-reg',
+        fontSize: 12,
+        color: '#e74c3c',
+        marginTop: 4,
+    },
     container: {
         flex: 1,
         backgroundColor: '#f8f9fa',

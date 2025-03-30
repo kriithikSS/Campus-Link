@@ -6,6 +6,7 @@ const LIGHT_THEME = {
   BLUE: "#3366ff",
   BLUEGREEN: "#006C72",
   WHITE: "#fff",
+  PRIMARY_LIGHT: '#E6F2FF',
   BLACK: "#000000",
   LIGHTGREY: "#d7dbdd",
   HIGHYELLOW: "#f7dc6f",

@@ -6,6 +6,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../config/FirebaseConfig';
 import Colors from '../../constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AdminDashboard = () => {
   const { user } = useUser();
@@ -96,50 +97,58 @@ const AdminDashboard = () => {
 
 
   
-  const menuItems = [
-    {
-      title: 'Add Post',
-      description: 'Add a new post for an event or club',
-      icon: 'add-circle',
-      route: '/admin/manage-events',
-      color: '#4F46E5'
-    },
-    {
-      title: 'Manage Posts',
-      description: 'Edit or delete campus posts',
-      icon: 'document-text',
-      route: '/admin/user-management',
-      color: '#0891B2'
-    },
-    {
-      title: 'Manage Applicants',
-      description: 'View and approve student applications',
-      icon: 'people',
-      route: '/admin/manage-applicants',
-      color: '#059669'
-    },
-    {
-      title: 'Analytics',
-      description: 'View event participation and app usage',
-      icon: 'bar-chart',
-      route: '/admin/analytics',
-      color: '#9333EA'
-    },
-    {
-      title: 'Return to Main App',
-      description: 'Switch to regular user view',
-      icon: 'arrow-back',
-      route: '/(tabs)/home',
-      color: '#6B7280'
-    },
-    {
-      title: 'Logout',
-      description: 'Sign out of your admin account',
-      icon: 'log-out',
-      route: 'logout',
-      color: '#EF4444'
-    }
-  ];
+const menuItems = [
+  {
+    title: "Add Post",
+    description: "Add a new post for an event or club",
+    icon: "add-circle",
+    route: "/admin/manage-events",
+    color: "#4F46E5",
+  },
+  {
+    title: "Manage Posts",
+    description: "Edit or delete campus posts",
+    icon: "document-text",
+    route: "/admin/user-management",
+    color: "#0891B2",
+  },
+  {
+    title: "Submit Event Summary",
+    description: "Provide details about completed events",
+    icon: "clipboard",
+    route: "/admin/event-summary",
+    color: "#FACC15",
+  },
+  {
+    title: "Manage Applicants",
+    description: "View and approve student applications",
+    icon: "people",
+    route: "/admin/manage-applicants",
+    color: "#059669",
+  },
+  {
+    title: "Analytics",
+    description: "View event participation and app usage",
+    icon: "bar-chart",
+    route: "/admin/analytics",
+    color: "#9333EA",
+  },
+  {
+    title: "Return to Main App",
+    description: "Switch to regular user view",
+    icon: "arrow-back",
+    route: "/(tabs)/home",
+    color: "#6B7280",
+  },
+  {
+    title: "Logout",
+    description: "Sign out of your admin account",
+    icon: "log-out",
+    route: "logout",
+    color: "#EF4444",
+  },
+];
+
   
   const handleRefresh = () => {
     if (user) {
@@ -151,16 +160,25 @@ const AdminDashboard = () => {
     if (route === 'logout') {
       Alert.alert("Sign Out", "Are you sure you want to sign out?", [
         { text: "Cancel", style: "cancel" },
-        { text: "Sign Out", onPress: () => { 
-            signOut(); 
-            router.replace("/login"); 
-          } 
+        { 
+          text: "Sign Out", 
+          onPress: async () => { 
+            try {
+              await signOut();
+              await AsyncStorage.clear();  // Clear stored session data
+              router.replace("/login");
+            } catch (error) {
+              console.error("Logout Error:", error);
+            }
+          },
+          style: "destructive"
         }
       ]);
       return;
     }
     router.push(route);
   };
+  
   
   return (
     <SafeAreaView style={styles.container}>
@@ -309,11 +327,19 @@ const AdminDashboard = () => {
             onPress={() => {
               Alert.alert("Sign Out", "Are you sure you want to sign out?", [
                 { text: "Cancel", style: "cancel" },
-                { text: "Sign Out", onPress: () => { 
-                    signOut(); 
-                    router.replace("/login"); 
-                  } 
+                { 
+                  text: "Sign Out", 
+                  onPress: async () => { 
+                    try {
+                      await signOut();
+                      await AsyncStorage.clear();  // Clears stored session data
+                      router.replace("/login"); 
+                    } catch (error) {
+                      console.error("Logout Error:", error);
+                    }
+                  }
                 }
+                
               ]);
             }}
           >

@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 import Colors from '../../constants/Colors';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -112,9 +113,14 @@ export default function Profile() {
           { text: "Cancel", style: "cancel" },
           { 
             text: "Sign Out", 
-            onPress: () => { 
-              signOut(); 
-              router.replace("/login"); 
+            onPress: async () => { 
+              try {
+                await signOut();  
+                await AsyncStorage.clear();  // Clears stored session data
+                setTimeout(() => router.replace("/login"), 500); 
+              } catch (error) {
+                console.error("Logout Error:", error);
+              }
             },
             style: "destructive"
           }
@@ -123,10 +129,11 @@ export default function Profile() {
       );
       return;
     }
-    
+  
     // Navigate to selected screen
     router.push(menu.path);
   };
+  
 
   // Animation for profile header
   const headerHeight = scrollY.interpolate({

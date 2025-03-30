@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ClerkProvider, ClerkLoaded, useAuth as useClerkAuth } from '@clerk/clerk-expo';
 import { AuthProvider } from '../context/AuthContext';
 import { ThemeProvider } from '../context/ThemeContext';
@@ -9,34 +10,47 @@ import { ThemeProvider } from '../context/ThemeContext';
 const tokenCache = {
   async getToken(key) {
     try {
-      const item = await SecureStore.getItemAsync(key);
-      if (item) {
-        console.log(`${key} was used 🔐 \n`);
-      } else {
-        console.log('No values stored under key: ' + key);
-      }
-      return item;
+      return await SecureStore.getItemAsync(key);
     } catch (error) {
-      console.error('SecureStore get item error: ', error);
-      await SecureStore.deleteItemAsync(key);
+      console.error('SecureStore get item error:', error);
       return null;
     }
   },
   async saveToken(key, value) {
     try {
-      return SecureStore.setItemAsync(key, value);
+      await SecureStore.setItemAsync(key, value);
     } catch (err) {
-      console.error('SecureStore save item error: ', err);
+      console.error('SecureStore save item error:', err);
     }
   },
 };
 
 function AuthWrapper({ children }) {
+  const router = useRouter();
   const { isLoaded, isSignedIn } = useClerkAuth();
+  const [role, setRole] = useState(null);
 
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
-      // Handle redirection or sign-in logic here if needed
+    const checkRoleAndRedirect = async () => {
+      try {
+        const storedRole = await AsyncStorage.getItem('userRole');
+        if (storedRole) {
+          setRole(storedRole);
+          if (storedRole === 'admin') router.replace('/admin');
+          else if (storedRole === 'manager') router.replace('/manager');
+          else router.replace('/(tabs)/home');
+        }
+      } catch (error) {
+        console.error('Error fetching stored role:', error);
+      }
+    };
+
+    if (isLoaded) {
+      if (!isSignedIn) {
+        router.replace('/login');
+      } else {
+        checkRoleAndRedirect();
+      }
     }
   }, [isLoaded, isSignedIn]);
 
@@ -69,13 +83,15 @@ export default function RootLayout() {
         <AuthWrapper>
           <ThemeProvider>
             <AuthProvider>
-              <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="index" />
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="login/index" options={{ headerShown: false }} />
-                <Stack.Screen name="redirect-handler" options={{ headerShown: false }} />
-                <Stack.Screen name="admin" options={{ headerShown: false }} />
-              </Stack>
+            <Stack screenOptions={{ headerShown: false }}>
+  <Stack.Screen name="index" />
+  <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+  <Stack.Screen name="admin" options={{ headerShown: false }} />
+  <Stack.Screen name="manager" options={{ headerShown: false }} />
+  <Stack.Screen name="login/index" options={{ headerShown: false }} />
+  <Stack.Screen name="redirect-handler" options={{ headerShown: false }} />
+</Stack>
+
             </AuthProvider>
           </ThemeProvider>
         </AuthWrapper>

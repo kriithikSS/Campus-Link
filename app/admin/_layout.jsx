@@ -6,7 +6,7 @@ import Colors from "../../constants/Colors";
 
 export default function AdminLayout() {
   const { isInitialized, isLoading, isAdmin, isSignedIn } = useAuth(); // ✅ Get admin status from AuthContext
- 
+
   // ✅ Show loading screen while checking admin status
   if (!isInitialized || isLoading) {
     return (
@@ -62,9 +62,27 @@ export default function AdminLayout() {
         }}
       />
       <Stack.Screen
+  name="event-reporting"
+  options={{
+    title: "Submit Event Report",
+    headerShown: true,
+  }}
+/>
+
+      <Stack.Screen
         name="analytics"
         options={{
           title: "Analytics",
+          headerShown: true,
+          headerStyle: { backgroundColor: Colors.PRIMARY },
+          headerTintColor: Colors.WHITE,
+          headerTitleStyle: { fontFamily: "Roboto-bold" },
+        }}
+      />
+      <Stack.Screen
+        name="event-summary"
+        options={{
+          title: "Submit Event Summary",
           headerShown: true,
           headerStyle: { backgroundColor: Colors.PRIMARY },
           headerTintColor: Colors.WHITE,

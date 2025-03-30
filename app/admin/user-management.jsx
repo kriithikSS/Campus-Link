@@ -1,3 +1,4 @@
+//Manage psot edit delete
 import React, { useEffect, useState, useCallback } from 'react';
 import { 
   View, Text, FlatList, Image, StyleSheet, ActivityIndicator, 
@@ -26,6 +27,7 @@ export default function UserManagement() {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [updatedData, setUpdatedData] = useState({});
+    const [isDeleting, setIsDeleting] = useState(false);
     const [image, setImage] = useState(null);
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -130,6 +132,8 @@ export default function UserManagement() {
     const confirmDeleteAction = async () => {
         if (!confirmDelete) return;
     
+        setIsDeleting(true); // Start loading state
+    
         try {
             // Retrieve the event document before deleting
             const eventDoc = doc(db, "Works", confirmDelete);
@@ -141,10 +145,10 @@ export default function UserManagement() {
             }
     
             const eventData = eventSnap.data();
-            const eventName = eventData.name; // Get event name
+            const eventName = eventData.name;
             const imageUrl = eventData.imageUrl;
     
-            // Extract the image path from the URL and delete image
+            // Delete image from storage
             if (imageUrl) {
                 const imagePath = decodeURIComponent(imageUrl.split('/o/')[1].split('?')[0]);
                 const imageRef = ref(storage, imagePath);
@@ -154,24 +158,25 @@ export default function UserManagement() {
             // Delete all applications linked to this event
             const applicationsQuery = query(collection(db, "Applications"), where("eventName", "==", eventName));
             const applicationsSnapshot = await getDocs(applicationsQuery);
-    
             const deleteApplicationPromises = applicationsSnapshot.docs.map(appDoc => deleteDoc(appDoc.ref));
             await Promise.all(deleteApplicationPromises);
     
-            console.log(`✅ Deleted ${applicationsSnapshot.docs.length} applications for event: ${eventName}`);
-    
-            // Now delete the event from Firestore
+            // Delete the event from Firestore
             await deleteDoc(eventDoc);
+            
+            // Update local state to remove the deleted event
             setEvents((prevEvents) => prevEvents.filter(event => event.id !== confirmDelete));
+            
             showToast("Event and related applications deleted successfully!");
-    
         } catch (error) {
             console.error("❌ Error deleting event and applications:", error);
             showToast("Failed to delete event", true);
+        } finally {
+            setIsDeleting(false); // End loading state
+            setConfirmDelete(null);
         }
-    
-        setConfirmDelete(null);
     };
+    
     
     const handleEdit = (event) => {
         // Make sure to properly set all available fields from the event
@@ -374,208 +379,255 @@ export default function UserManagement() {
                 />
             )}
 
-            {/* Edit Modal */}
-            <Modal 
-                visible={modalVisible} 
-                animationType="slide" 
-                transparent={true}
-                statusBarTranslucent
-            >
-                <KeyboardAwareScrollView 
-                    contentContainerStyle={styles.modalOverlay}
-                    keyboardShouldPersistTaps="handled"
-                >
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Edit Event</Text>
-                            <TouchableOpacity 
-                                style={styles.closeButton} 
-                                onPress={() => setModalVisible(false)}
-                            >
-                                <Ionicons name="close-circle" size={28} color={Colors.GRAY} />
-                            </TouchableOpacity>
-                        </View>
 
-                        {/* Image Picker */}
-                        <TouchableOpacity 
-                            onPress={imagePicker}
-                            style={styles.imagePickerContainer}
+            {/* Edit Modal */}
+                        <Modal 
+                            visible={modalVisible} 
+                            animationType="slide" 
+                            transparent={true}
+                            statusBarTranslucent
                         >
-                            {!image ? (
-                                <View style={styles.imagePickerPlaceholder}>
-                                    <Ionicons name="image-outline" size={40} color={Colors.PRIMARY} />
-                                    <Text style={styles.imagePickerText}>Add Image</Text>
-                                </View>
-                            ) : (
-                                <View style={styles.imagePickerWrapper}>
-                                    <Image 
-                                        source={{uri: image}}
-                                        style={styles.imagePicker} 
-                                    />
-                                    <View style={styles.imageOverlay}>
-                                        <Ionicons name="camera" size={24} color="white" />
+                            <KeyboardAwareScrollView 
+                                contentContainerStyle={styles.modalOverlay}
+                                keyboardShouldPersistTaps="handled"
+                            >
+                                <View style={styles.modalContent}>
+                                    <View style={styles.modalHeader}>
+                                        <Text style={styles.modalTitle}>Edit Event</Text>
+                                        <TouchableOpacity 
+                                            style={styles.closeButton} 
+                                            onPress={() => setModalVisible(false)}
+                                        >
+                                            <Ionicons name="close-circle" size={28} color={Colors.GRAY} />
+                                        </TouchableOpacity>
+                                    </View>
+            
+                                    {/* Image Picker */}
+                                    <TouchableOpacity 
+                                        onPress={imagePicker}
+                                        style={styles.imagePickerContainer}
+                                    >
+                                        {!image ? (
+                                            <View style={styles.imagePickerPlaceholder}>
+                                                <Ionicons name="image-outline" size={40} color={Colors.PRIMARY} />
+                                                <Text style={styles.imagePickerText}>Add Image</Text>
+                                            </View>
+                                        ) : (
+                                            <View style={styles.imagePickerWrapper}>
+                                                <Image 
+                                                    source={{uri: image}}
+                                                    style={styles.imagePicker} 
+                                                />
+                                                <View style={styles.imageOverlay}>
+                                                    <Ionicons name="camera" size={24} color="white" />
+                                                </View>
+                                            </View>
+                                        )}
+                                    </TouchableOpacity>
+            
+                                    {/* Form Fields */}
+                                    <View style={styles.formContainer}>
+                                        {/* Name */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.label}>
+                                                Event Name <Text style={styles.requiredStar}>*</Text>
+                                            </Text>
+                                            <View style={styles.inputWrapper}>
+                                                <Ionicons name="text-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={updatedData.name || ''}
+                                                    onChangeText={(value) => setUpdatedData(prev => ({...prev, name: value}))}
+                                                    placeholder="Enter event name"
+                                                />
+                                            </View>
+                                        </View>
+            
+                                        {/* Category */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.label}>
+                                                Category <Text style={styles.requiredStar}>*</Text>
+                                            </Text>
+                                            <View style={styles.pickerWrapper}>
+                                                <Ionicons name="pricetag-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
+                                                <Picker
+                                                    selectedValue={updatedData.category || ''}
+                                                    onValueChange={(itemValue) => setUpdatedData(prev => ({...prev, category: itemValue}))}
+                                                    style={styles.picker}
+                                                >
+                                                    <Picker.Item label="Select Category" value="" />
+                                                    {categories.map((category, index) => (
+                                                        <Picker.Item key={index} label={category} value={category} />
+                                                    ))}
+                                                </Picker>
+                                            </View>
+                                        </View>
+            
+                                        {/* Instagram ID - Optional */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.label}>
+                                                Instagram ID
+                                            </Text>
+                                            <View style={styles.inputWrapper}>
+                                                <Ionicons name="logo-instagram" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={updatedData.instaId || ''}
+                                                    onChangeText={(value) => setUpdatedData(prev => ({...prev, instaId: value}))}
+                                                    placeholder="Enter Instagram ID (optional)"
+                                                />
+                                            </View>
+                                        </View>
+            
+                                        {/* Date - Now Optional */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.label}>
+                                                Date
+                                            </Text>
+                                            <TouchableOpacity 
+                                                style={styles.inputWrapper}
+                                                onPress={() => setShowDatePicker(true)}
+                                            >
+                                                <Ionicons name="calendar-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
+                                                <Text style={styles.dateInput}>
+                                                    {updatedData.date || "Select date (optional)"}
+                                                </Text>
+                                            </TouchableOpacity>
+                                            {showDatePicker && (
+                                                <DateTimePicker
+                                                    value={updatedData.date ? new Date(updatedData.date) : new Date()}
+                                                    mode="date"
+                                                    display="default"
+                                                    onChange={handleDateChange}
+                                                />
+                                            )}
+                                        </View>
+            
+                                        {/* Email - Now Mandatory */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.label}>
+                                                Contact Email <Text style={styles.requiredStar}>*</Text>
+                                            </Text>
+                                            <View style={styles.inputWrapper}>
+                                                <Ionicons name="mail-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={updatedData.email || ''}
+                                                    onChangeText={(value) => setUpdatedData(prev => ({...prev, email: value}))}
+                                                    placeholder="Enter contact email"
+                                                    keyboardType="email-address"
+                                                />
+                                            </View>
+                                        </View>
+            
+                                        {/* Google Form Link */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.label}>
+                                                Google Form Link
+                                            </Text>
+                                            <View style={styles.inputWrapper}>
+                                                <Ionicons name="link-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
+                                                <TextInput
+                                                    style={styles.input}
+                                                    value={updatedData.googleFormUrl || ''}
+                                                    onChangeText={(value) => setUpdatedData(prev => ({...prev, googleFormUrl: value}))}
+                                                    placeholder="Enter Google Form URL (optional)"
+                                                />
+                                            </View>
+                                        </View>
+            
+                                        {/* About */}
+                                        <View style={styles.inputContainer}>
+                                            <Text style={styles.label}>
+                                                About <Text style={styles.requiredStar}>*</Text>
+                                            </Text>
+                                            <View style={[styles.inputWrapper, {alignItems: 'flex-start'}]}>
+                                                <Ionicons name="information-circle-outline" size={20} color={Colors.PRIMARY} style={[styles.inputIcon, {marginTop: 12}]} />
+                                                <TextInput
+                                                    style={[styles.input, styles.textArea]}
+                                                    multiline
+                                                    numberOfLines={5}
+                                                    value={updatedData.about || ''}
+                                                    onChangeText={(value) => setUpdatedData(prev => ({...prev, about: value}))}
+                                                    placeholder="Enter description about the event"
+                                                    textAlignVertical="top"
+                                                />
+                                            </View>
+                                        </View>
+                                    </View>
+            
+                                    <View style={styles.modalButtonContainer}>
+                                        <TouchableOpacity 
+                                            style={[
+                                                styles.modalButton, 
+                                                styles.updateButton,
+                                                isSubmitting && styles.disabledButton
+                                            ]} 
+                                            onPress={handleUpdate}
+                                            disabled={isSubmitting}
+                                        >
+                                            {isSubmitting ? (
+                                                <ActivityIndicator size="small" color="white" />
+                                            ) : (
+                                                <>
+                                                    <Ionicons name="save-outline" size={20} color="white" />
+                                                    <Text style={styles.buttonText}>Update Event</Text>
+                                                </>
+                                            )}
+                                        </TouchableOpacity>
                                     </View>
                                 </View>
-                            )}
-                        </TouchableOpacity>
+                            </KeyboardAwareScrollView>
+                        </Modal>
 
-                        {/* Form Fields */}
-                        <View style={styles.formContainer}>
-                            {/* Name */}
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>
-                                    Event Name <Text style={styles.requiredStar}>*</Text>
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <Ionicons name="text-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        value={updatedData.name || ''}
-                                        onChangeText={(value) => setUpdatedData(prev => ({...prev, name: value}))}
-                                        placeholder="Enter event name"
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Category */}
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>
-                                    Category <Text style={styles.requiredStar}>*</Text>
-                                </Text>
-                                <View style={styles.pickerWrapper}>
-                                    <Ionicons name="pricetag-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
-                                    <Picker
-                                        selectedValue={updatedData.category || ''}
-                                        onValueChange={(itemValue) => setUpdatedData(prev => ({...prev, category: itemValue}))}
-                                        style={styles.picker}
-                                    >
-                                        <Picker.Item label="Select Category" value="" />
-                                        {categories.map((category, index) => (
-                                            <Picker.Item key={index} label={category} value={category} />
-                                        ))}
-                                    </Picker>
-                                </View>
-                            </View>
-
-                            {/* Instagram ID - Optional */}
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>
-                                    Instagram ID
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <Ionicons name="logo-instagram" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        value={updatedData.instaId || ''}
-                                        onChangeText={(value) => setUpdatedData(prev => ({...prev, instaId: value}))}
-                                        placeholder="Enter Instagram ID (optional)"
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Date - Now Optional */}
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>
-                                    Date
-                                </Text>
-                                <TouchableOpacity 
-                                    style={styles.inputWrapper}
-                                    onPress={() => setShowDatePicker(true)}
-                                >
-                                    <Ionicons name="calendar-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
-                                    <Text style={styles.dateInput}>
-                                        {updatedData.date || "Select date (optional)"}
-                                    </Text>
-                                </TouchableOpacity>
-                                {showDatePicker && (
-                                    <DateTimePicker
-                                        value={updatedData.date ? new Date(updatedData.date) : new Date()}
-                                        mode="date"
-                                        display="default"
-                                        onChange={handleDateChange}
-                                    />
-                                )}
-                            </View>
-
-                            {/* Email - Now Mandatory */}
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>
-                                    Contact Email <Text style={styles.requiredStar}>*</Text>
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <Ionicons name="mail-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        value={updatedData.email || ''}
-                                        onChangeText={(value) => setUpdatedData(prev => ({...prev, email: value}))}
-                                        placeholder="Enter contact email"
-                                        keyboardType="email-address"
-                                    />
-                                </View>
-                            </View>
-
-                            {/* Google Form Link */}
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>
-                                    Google Form Link
-                                </Text>
-                                <View style={styles.inputWrapper}>
-                                    <Ionicons name="link-outline" size={20} color={Colors.PRIMARY} style={styles.inputIcon} />
-                                    <TextInput
-                                        style={styles.input}
-                                        value={updatedData.googleFormUrl || ''}
-                                        onChangeText={(value) => setUpdatedData(prev => ({...prev, googleFormUrl: value}))}
-                                        placeholder="Enter Google Form URL (optional)"
-                                    />
-                                </View>
-                            </View>
-
-                            {/* About */}
-                            <View style={styles.inputContainer}>
-                                <Text style={styles.label}>
-                                    About <Text style={styles.requiredStar}>*</Text>
-                                </Text>
-                                <View style={[styles.inputWrapper, {alignItems: 'flex-start'}]}>
-                                    <Ionicons name="information-circle-outline" size={20} color={Colors.PRIMARY} style={[styles.inputIcon, {marginTop: 12}]} />
-                                    <TextInput
-                                        style={[styles.input, styles.textArea]}
-                                        multiline
-                                        numberOfLines={5}
-                                        value={updatedData.about || ''}
-                                        onChangeText={(value) => setUpdatedData(prev => ({...prev, about: value}))}
-                                        placeholder="Enter description about the event"
-                                        textAlignVertical="top"
-                                    />
-                                </View>
-                            </View>
-                        </View>
-
-                        <View style={styles.modalButtonContainer}>
-                            <TouchableOpacity 
-                                style={[
-                                    styles.modalButton, 
-                                    styles.updateButton,
-                                    isSubmitting && styles.disabledButton
-                                ]} 
-                                onPress={handleUpdate}
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? (
-                                    <ActivityIndicator size="small" color="white" />
-                                ) : (
-                                    <>
-                                        <Ionicons name="save-outline" size={20} color="white" />
-                                        <Text style={styles.buttonText}>Update Event</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </KeyboardAwareScrollView>
-            </Modal>
-
+                        
             {/* Delete Confirmation Modal */}
             <Modal
+    visible={confirmDelete !== null}
+    transparent={true}
+    animationType="fade"
+>
+    <View style={styles.confirmModalOverlay}>
+        <Animated.View 
+            entering={FadeIn} 
+            style={styles.confirmModalContent}
+        >
+            <Ionicons name="alert-circle" size={60} color="red" style={styles.alertIcon} />
+            <Text style={styles.confirmTitle}>Delete Event?</Text>
+            <Text style={styles.confirmText}>
+                This action cannot be undone. Are you sure you want to delete this event?
+            </Text>
+            <View style={styles.confirmButtonRow}>
+                <TouchableOpacity
+                    style={[styles.confirmButton, styles.cancelConfirmButton]}
+                    onPress={() => setConfirmDelete(null)}
+                    disabled={isDeleting}
+                >
+                    <Text style={styles.confirmButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={[
+                        styles.confirmButton, 
+                        styles.deleteConfirmButton,
+                        isDeleting && styles.disabledButton
+                    ]}
+                    onPress={confirmDeleteAction}
+                    disabled={isDeleting}
+                >
+                    {isDeleting ? (
+                        <ActivityIndicator size="small" color="white" />
+                    ) : (
+                        <Text style={[styles.confirmButtonText, {color: 'white'}]}>Delete</Text>
+                    )}
+                </TouchableOpacity>
+            </View>
+        </Animated.View>
+    </View>
+</Modal>
+
+
+             {/* Delete Confirmation Modal */}
+             <Modal
                 visible={confirmDelete !== null}
                 transparent={true}
                 animationType="fade"
@@ -594,14 +646,24 @@ export default function UserManagement() {
                             <TouchableOpacity
                                 style={[styles.confirmButton, styles.cancelConfirmButton]}
                                 onPress={() => setConfirmDelete(null)}
+                                disabled={isDeleting}
                             >
                                 <Text style={styles.confirmButtonText}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.confirmButton, styles.deleteConfirmButton]}
+                                style={[
+                                    styles.confirmButton, 
+                                    styles.deleteConfirmButton,
+                                    isDeleting && styles.disabledButton
+                                ]}
                                 onPress={confirmDeleteAction}
+                                disabled={isDeleting}
                             >
-                                <Text style={[styles.confirmButtonText, {color: 'white'}]}>Delete</Text>
+                                {isDeleting ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Text style={[styles.confirmButtonText, {color: 'white'}]}>Delete</Text>
+                                )}
                             </TouchableOpacity>
                         </View>
                     </Animated.View>
@@ -963,5 +1025,9 @@ const styles = StyleSheet.create({
     confirmButtonText: {
         fontSize: 16,
         fontWeight: 'bold'
-    }
+    },
+    disabledButton: {
+        backgroundColor: '#999',
+        opacity: 0.7
+    }    
 });
